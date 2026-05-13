@@ -245,9 +245,21 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(
     <div class="ltitle">Welcome back</div>
     <div class="ldesc">Sign in to continue</div>
     <div class="lfield"><label>Email</label><input type="email" id="l-email" placeholder="you@blindsflooring.co.za" onkeydown="if(event.key==='Enter')doLogin()"></div>
-    <div class="lfield"><label>Password</label><input type="password" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="lfield">
+      <label>Password</label>
+      <div style="position:relative">
+        <input type="password" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" style="width:100%;padding:10px 40px 10px 12px;border:1px solid var(--border2);border-radius:var(--radius);font-size:14px;font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text);transition:border-color 0.12s">
+        <button onclick="togglePass()" type="button" title="Show/hide password" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);padding:4px;display:flex;align-items:center" id="eye-btn">
+          <svg id="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+    </div>
     <button class="lbtn" id="l-btn" onclick="doLogin()">Sign in</button>
     <div class="lerr" id="l-err"></div>
+    <div style="text-align:center;margin-top:14px">
+      <button onclick="doForgotPassword()" type="button" style="background:none;border:none;color:var(--teal);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:underline">Forgot your password?</button>
+    </div>
+    <div id="l-reset-msg" style="display:none;background:var(--teal-bg);color:var(--teal);padding:10px 12px;border-radius:var(--radius);font-size:13px;margin-top:12px;text-align:center"></div>
   </div>
 </div>
 
