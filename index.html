@@ -122,7 +122,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(
 .ff textarea{resize:vertical;min-height:60px}
 .fg{display:grid;gap:12px}.fg2{grid-template-columns:1fr 1fr}.fg3{grid-template-columns:1fr 1fr 1fr}.fg4{grid-template-columns:1fr 1fr 1fr 1fr}
 
-.li-b{display:grid;grid-template-columns:2fr 0.5fr 0.8fr 0.8fr 1fr 1fr 30px;gap:6px;align-items:center;margin-bottom:6px}
+.li-b{display:grid;grid-template-columns:2fr 0.5fr 0.7fr 0.7fr 0.9fr 0.9fr 0.9fr 1fr 30px;gap:6px;align-items:center;margin-bottom:6px}
 .li-f{display:grid;grid-template-columns:2fr 0.7fr 1fr 1fr 1fr 30px;gap:6px;align-items:center;margin-bottom:6px}
 .li-b input,.li-f input{font-size:12px;padding:6px 8px}
 .li-label{font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text3);letter-spacing:0.04em}
@@ -366,7 +366,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(
   <div class="page" id="page-clients">
     <div class="fbar"><input type="text" placeholder="Search..." oninput="renderClients(this.value)" style="max-width:240px"><div style="margin-left:auto"><button class="btn btn-primary btn-sm no-print" onclick="openM('m-client')">+ Add Client</button></div></div>
     <div class="card" style="padding:0;overflow:hidden"><div class="tbl-wrap">
-      <table class="tbl"><thead><tr><th>Client</th><th>Phone</th><th>Email</th><th>VAT No.</th><th>Area</th><th class="num">Jobs</th><th class="num">Billed</th><th class="num">Outstanding</th><th class="no-print"></th></tr></thead><tbody id="clients-body"></tbody></table>
+      <table class="tbl"><thead><tr><th>Client</th><th>Company</th><th>Phone</th><th>Email</th><th>VAT No.</th><th class="num">Jobs</th><th class="num">Billed</th><th class="num">Outstanding</th><th class="no-print"></th></tr></thead><tbody id="clients-body"></tbody></table>
     </div></div>
   </div>
 
@@ -379,11 +379,13 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(
       </div>
       <div class="divider">Client Details</div>
       <div class="fg fg2">
-        <div class="ff"><label>Client Name *</label><input type="text" id="q-client" list="cl-list" placeholder="Full name" oninput="autoFillClient()"><datalist id="cl-list"></datalist></div>
-        <div class="ff"><label>Address</label><input type="text" id="q-addr" placeholder="12 Main Rd"></div>
+        <div class="ff"><label>Client / Contact Name *</label><input type="text" id="q-client" list="cl-list" placeholder="e.g. John Smith" oninput="autoFillClient()"><datalist id="cl-list"></datalist></div>
+        <div class="ff"><label>Company Name <span style="color:var(--text3);font-weight:400;text-transform:none">(if applicable)</span></label><input type="text" id="q-company" placeholder="e.g. ABC Builders (Pty) Ltd"></div>
         <div class="ff"><label>Phone</label><input type="text" id="q-phone" placeholder="082 000 0000"></div>
         <div class="ff"><label>Email</label><input type="text" id="q-email" placeholder="client@email.com"></div>
         <div class="ff"><label>Client VAT Number <span style="color:var(--text3);font-weight:400;text-transform:none">(if applicable)</span></label><input type="text" id="q-cvatn" placeholder="e.g. 4123456789"></div>
+        <div class="ff"><label>Billing / Company Address</label><input type="text" id="q-addr" placeholder="Company postal or billing address"></div>
+        <div class="ff" style="grid-column:1/-1"><label>Installation / Site Address *</label><input type="text" id="q-site" placeholder="Physical address where blinds/flooring will be installed"></div>
       </div>
       <div class="divider">Job Details</div>
       <div class="fg fg4">
@@ -402,13 +404,13 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(
 
       <div id="s-blinds">
         <div class="divider">Blinds Items</div>
-        <div class="li-b" style="margin-bottom:5px"><span class="li-label">Description</span><span class="li-label">Qty</span><span class="li-label">Width mm</span><span class="li-label">Drop mm</span><span class="li-label">Colour/Type</span><span class="li-label">Unit Price (R excl)</span><span></span></div>
+        <div class="li-b" style="margin-bottom:5px"><span class="li-label">Description</span><span class="li-label">Qty</span><span class="li-label">Width mm</span><span class="li-label">Drop mm</span><span class="li-label">Type</span><span class="li-label">Fabric</span><span class="li-label">Colour</span><span class="li-label">Unit Price (R excl)</span><span></span></div>
         <div id="bl-lines"></div>
         <button class="btn btn-sm btn-ghost" onclick="addL('b')" style="margin-bottom:4px">+ Add line</button>
       </div>
       <div id="s-floor" class="hidden">
         <div class="divider">Flooring Items</div>
-        <div class="li-f" style="margin-bottom:5px"><span class="li-label">Location</span><span class="li-label">M²/LM</span><span class="li-label">Floor Type</span><span class="li-label">Colour</span><span class="li-label">Unit Price (R excl)</span><span></span></div>
+        <div class="li-f" style="margin-bottom:5px"><span class="li-label">Location / Description</span><span class="li-label">M²/LM</span><span class="li-label">Floor Type</span><span class="li-label">Colour</span><span class="li-label">Total Price (R excl)</span><span></span></div>
         <div id="fl-lines"></div>
         <button class="btn btn-sm btn-ghost" onclick="addL('f')" style="margin-bottom:4px">+ Add line</button>
       </div>
@@ -440,18 +442,20 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(
       <div style="background:#f0fafa;border:1px solid #c8eaeb;border-radius:var(--radius);padding:10px 14px;margin-top:12px;display:flex;gap:16px;flex-wrap:wrap;align-items:center">
         <span style="font-size:11px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:0.05em">PDF Options:</span>
         <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;font-weight:500">
-          <div class="toggle-wrap" onclick="toggleOpt('show-measurements')">
-            <div class="toggle-track" id="track-show-measurements2"></div>
-            <div class="toggle-thumb" id="thumb-show-measurements2"></div>
-          </div>
-          Show Measurements
+          <div class="toggle-wrap" onclick="toggleOpt('show-measurements')"><div class="toggle-track" id="track-show-measurements2"></div><div class="toggle-thumb" id="thumb-show-measurements2"></div></div>
+          Measurements
         </label>
         <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;font-weight:500">
-          <div class="toggle-wrap" onclick="toggleOpt('show-colour')">
-            <div class="toggle-track" id="track-show-colour2" style="background:var(--teal)"></div>
-            <div class="toggle-thumb" id="thumb-show-colour2" style="left:18px"></div>
-          </div>
-          Show Colour/Type
+          <div class="toggle-wrap" onclick="toggleOpt('show-type')"><div class="toggle-track" id="track-show-type2" style="background:var(--teal)"></div><div class="toggle-thumb" id="thumb-show-type2" style="left:18px"></div></div>
+          Type
+        </label>
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;font-weight:500">
+          <div class="toggle-wrap" onclick="toggleOpt('show-fabric')"><div class="toggle-track" id="track-show-fabric2" style="background:var(--teal)"></div><div class="toggle-thumb" id="thumb-show-fabric2" style="left:18px"></div></div>
+          Fabric
+        </label>
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;font-weight:500">
+          <div class="toggle-wrap" onclick="toggleOpt('show-colour')"><div class="toggle-track" id="track-show-colour2" style="background:var(--teal)"></div><div class="toggle-thumb" id="thumb-show-colour2" style="left:18px"></div></div>
+          Colour
         </label>
       </div>
       <div class="btn-group" style="justify-content:flex-end;margin-top:8px">
@@ -674,22 +678,27 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(
   <div class="modal wide"><div class="modal-hdr"><span class="modal-title" id="mj-title">Job</span><button class="btn btn-sm btn-ghost" onclick="closeM('m-job')">&#10005;</button></div>
     <div id="mj-body"></div>
     <!-- PDF Options -->
-    <div style="background:#f0fafa;border:1px solid #c8eaeb;border-radius:var(--radius);padding:10px 14px;margin:12px 0;display:flex;gap:16px;flex-wrap:wrap;align-items:center">
-      <span style="font-size:11px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:0.05em">PDF Options:</span>
-      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;font-weight:500">
-        <div class="toggle-wrap" onclick="toggleOpt('show-measurements')">
-          <div class="toggle-track" id="track-show-measurements"></div>
-          <div class="toggle-thumb" id="thumb-show-measurements"></div>
-        </div>
-        Show Measurements
-      </label>
-      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;font-weight:500">
-        <div class="toggle-wrap" onclick="toggleOpt('show-colour')">
-          <div class="toggle-track" id="track-show-colour" style="background:var(--teal)"></div>
-          <div class="toggle-thumb" id="thumb-show-colour" style="left:18px"></div>
-        </div>
-        Show Colour/Type
-      </label>
+    <div style="background:#f0fafa;border:1px solid #c8eaeb;border-radius:var(--radius);padding:10px 14px;margin:12px 0">
+      <div style="font-size:11px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px">PDF Options — What to show on client copy:</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;font-weight:500">
+          <div class="toggle-wrap" onclick="toggleOpt('show-measurements')"><div class="toggle-track" id="track-show-measurements"></div><div class="toggle-thumb" id="thumb-show-measurements"></div></div>
+          Measurements
+        </label>
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;font-weight:500">
+          <div class="toggle-wrap" onclick="toggleOpt('show-type')"><div class="toggle-track" id="track-show-type" style="background:var(--teal)"></div><div class="toggle-thumb" id="thumb-show-type" style="left:18px"></div></div>
+          Type
+        </label>
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;font-weight:500">
+          <div class="toggle-wrap" onclick="toggleOpt('show-fabric')"><div class="toggle-track" id="track-show-fabric" style="background:var(--teal)"></div><div class="toggle-thumb" id="thumb-show-fabric" style="left:18px"></div></div>
+          Fabric
+        </label>
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;font-weight:500">
+          <div class="toggle-wrap" onclick="toggleOpt('show-colour')"><div class="toggle-track" id="track-show-colour" style="background:var(--teal)"></div><div class="toggle-thumb" id="thumb-show-colour" style="left:18px"></div></div>
+          Colour
+        </label>
+        <span style="font-size:11px;color:var(--text3);margin-left:4px">&#9679; Off by default = hidden from client</span>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-danger" id="btn-del" style="margin-right:auto" onclick="delJob()">Delete</button>
@@ -994,6 +1003,7 @@ async function saveClient(){
   const fn=document.getElementById('c-fn').value.trim();if(!fn){toast('Enter a name','err');return}
   const{error}=await db.from('bf_clients').insert({
     name:fn+' '+document.getElementById('c-ln').value.trim(),
+    company:document.getElementById('c-co').value.trim(),
     phone:document.getElementById('c-ph').value,
     email:document.getElementById('c-em').value,
     vat_number:document.getElementById('c-vat').value.trim(),
@@ -1001,7 +1011,7 @@ async function saveClient(){
     address:document.getElementById('c-ad').value
   });
   if(error){toast('Failed: '+error.message,'err');return}
-  ['c-fn','c-ln','c-ph','c-em','c-vat','c-ar','c-ad'].forEach(id=>document.getElementById(id).value='');
+  ['c-fn','c-ln','c-co','c-ph','c-em','c-vat','c-ar','c-ad'].forEach(id=>document.getElementById(id).value='');
   closeM('m-client');toast('Client saved','ok');
   const{data}=await db.from('bf_clients').select('*').order('name');clients=data||[];renderClients();
 }
@@ -1015,6 +1025,7 @@ function autoFillClient(){
     if(c.email&&!document.getElementById('q-email').value)document.getElementById('q-email').value=c.email;
     if(c.address&&!document.getElementById('q-addr').value)document.getElementById('q-addr').value=c.address;
     if(c.vat_number)document.getElementById('q-cvatn').value=c.vat_number;
+    if(c.company&&!document.getElementById('q-company').value)document.getElementById('q-company').value=c.company||'';
   }
 }
 
@@ -1034,7 +1045,7 @@ function initForm(jobId){
   if(jobId){
     const j=jobs.find(x=>x.id===jobId);
     if(!CAN.editJob(j)){toast('No permission to edit this job','err');return}
-    document.getElementById('q-client').value=cName(j);document.getElementById('q-addr').value=j.address||'';
+    document.getElementById('q-client').value=cName(j);document.getElementById('q-company').value=j.company||'';document.getElementById('q-addr').value=j.address||'';document.getElementById('q-site').value=j.site_address||'';
     document.getElementById('q-phone').value=j.phone||'';document.getElementById('q-email').value=j.email||'';
     document.getElementById('q-cvatn').value=j.client_vat||'';
     document.getElementById('q-date').value=j.quote_date||'';document.getElementById('q-install').value=j.install_date||'';
@@ -1046,14 +1057,14 @@ function initForm(jobId){
     if(j.created_by)document.getElementById('q-rep').value=j.created_by;
     const lines=getLines(j);qType=j.type||'Blinds';
     bLines=qType!=='Flooring'?lines.map(l=>({...l})):[{desc:'',qty:1,price:0,width:'',drop:'',colour:''}];
-    fLines=qType!=='Blinds'?lines.map(l=>({...l})):[{desc:'',qty:1,price:0,colour:''}];
+    fLines=qType!=='Blinds'?lines.map(l=>({...l})):[{desc:'',qty:'',price:'',width:'',colour:''}];
   } else {
-    ['q-client','q-addr','q-phone','q-email','q-notes','q-cvatn'].forEach(id=>document.getElementById(id).value='');
+    ['q-client','q-company','q-addr','q-site','q-phone','q-email','q-notes','q-cvatn'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('q-date').value=new Date().toISOString().split('T')[0];document.getElementById('q-install').value='';
     document.getElementById('q-status').value='Quote';document.getElementById('q-doc').value='Quotation';
-    document.getElementById('q-pay').value='Unpaid';document.getElementById('q-rec').value=0;document.getElementById('q-meth').value='EFT';
+    document.getElementById('q-pay').value='Unpaid';document.getElementById('q-rec').value='';document.getElementById('q-meth').value='EFT';
     document.getElementById('q-disc').value=0;
-    qType='Blinds';bLines=[{desc:'',qty:1,price:0,width:'',drop:'',colour:''}];fLines=[{desc:'',qty:1,price:0,colour:''}];
+    qType='Blinds';bLines=[{desc:'',qty:1,price:'',width:'',drop:'',btype:'',fabric:'',colour:''}];fLines=[{desc:'',qty:'',price:'',width:'',colour:''}];
   }
   setQT(qType);renderL('b');renderL('f');updateRefPreview();
   const names=[...new Set(jobs.map(j=>cName(j))),...clients.map(c=>c.name)].filter(Boolean).sort();
@@ -1064,17 +1075,17 @@ function initForm(jobId){
 function renderL(s){
   const lines=s==='b'?bLines:fLines;
   const cont=document.getElementById(s==='b'?'bl-lines':'fl-lines');
-  if(s==='b'){cont.innerHTML=lines.map((l,i)=>`<div class="li-b"><input type="text" value="${l.desc||''}" placeholder="Description" oninput="bLines[${i}].desc=this.value"><input type="number" value="${l.qty||1}" min="1" step="1" oninput="bLines[${i}].qty=+this.value;calcT()"><input type="text" value="${l.width||''}" placeholder="2100" oninput="bLines[${i}].width=this.value"><input type="text" value="${l.drop||''}" placeholder="2000" oninput="bLines[${i}].drop=this.value"><input type="text" value="${l.colour||''}" placeholder="Colour" oninput="bLines[${i}].colour=this.value"><input type="number" value="${l.price||0}" min="0" step="0.01" oninput="bLines[${i}].price=+this.value;calcT()"><button class="btn btn-sm btn-ghost" onclick="rmL('b',${i})">&#10005;</button></div>`).join('')}
-  else{cont.innerHTML=lines.map((l,i)=>`<div class="li-f"><input type="text" value="${l.desc||''}" placeholder="Location" oninput="fLines[${i}].desc=this.value"><input type="number" value="${l.qty||1}" min="0" step="0.1" oninput="fLines[${i}].qty=+this.value;calcT()"><input type="text" value="${l.width||''}" placeholder="Floor type" oninput="fLines[${i}].width=this.value"><input type="text" value="${l.colour||''}" placeholder="Colour" oninput="fLines[${i}].colour=this.value"><input type="number" value="${l.price||0}" min="0" step="0.01" oninput="fLines[${i}].price=+this.value;calcT()"><button class="btn btn-sm btn-ghost" onclick="rmL('f',${i})">&#10005;</button></div>`).join('')}
+  if(s==='b'){cont.innerHTML=lines.map((l,i)=>`<div class="li-b"><input type="text" value="${l.desc||''}" placeholder="Description" oninput="bLines[${i}].desc=this.value"><input type="number" value="${l.qty||1}" min="1" step="1" oninput="bLines[${i}].qty=+this.value;calcT()"><input type="text" value="${l.width||''}" placeholder="2100" oninput="bLines[${i}].width=this.value"><input type="text" value="${l.drop||''}" placeholder="2000" oninput="bLines[${i}].drop=this.value"><input type="text" value="${l.btype||''}" placeholder="Roller/Roman..." oninput="bLines[${i}].btype=this.value"><input type="text" value="${l.fabric||''}" placeholder="Blockout..." oninput="bLines[${i}].fabric=this.value"><input type="text" value="${l.colour||''}" placeholder="Linen White" oninput="bLines[${i}].colour=this.value"><input type="number" value="${l.price||''}" min="0" step="0.01" placeholder="0.00" oninput="bLines[${i}].price=+this.value;calcT()"><button class="btn btn-sm btn-ghost" onclick="rmL('b',${i})">&#10005;</button></div>`).join('')}
+  else{cont.innerHTML=lines.map((l,i)=>`<div class="li-f"><input type="text" value="${l.desc||''}" placeholder="Location / description" oninput="fLines[${i}].desc=this.value"><input type="number" value="${l.qty||''}" min="0" step="0.1" placeholder="M²/LM" oninput="fLines[${i}].qty=+this.value;calcT()"><input type="text" value="${l.width||''}" placeholder="Floor type" oninput="fLines[${i}].width=this.value"><input type="text" value="${l.colour||''}" placeholder="Colour" oninput="fLines[${i}].colour=this.value"><input type="number" value="${l.price||''}" min="0" step="0.01" placeholder="Total price" oninput="fLines[${i}].price=+this.value;calcT()"><button class="btn btn-sm btn-ghost" onclick="rmL('f',${i})">&#10005;</button></div>`).join('')}
   calcT();
 }
-function addL(s){if(s==='b'){bLines.push({desc:'',qty:1,price:0,width:'',drop:'',colour:''});renderL('b')}else{fLines.push({desc:'',qty:1,price:0,colour:''});renderL('f')}}
+function addL(s){if(s==='b'){bLines.push({desc:'',qty:1,price:0,width:'',drop:'',btype:'',fabric:'',colour:''});renderL('b')}else{fLines.push({desc:'',qty:'',price:'',width:'',colour:''});renderL('f')}}
 function rmL(s,i){if(s==='b'){if(bLines.length>1){bLines.splice(i,1);renderL('b')}}else{if(fLines.length>1){fLines.splice(i,1);renderL('f')}}}
 
 function calcT(){
   let sub=0;
   if(qType!=='Flooring')sub+=bLines.reduce((s,l)=>s+(+l.qty||1)*(+l.price||0),0);
-  if(qType!=='Blinds')sub+=fLines.reduce((s,l)=>s+(+l.qty||1)*(+l.price||0),0);
+  if(qType!=='Blinds')sub+=fLines.reduce((s,l)=>s+(+l.price||0),0);
   const discPct=Math.min(100,Math.max(0,+document.getElementById('q-disc').value||0));
   const discAmt=sub*discPct/100;
   const afterDisc=sub-discAmt;
@@ -1100,7 +1111,9 @@ async function saveQ(){
   const client=document.getElementById('q-client').value.trim();
   if(!client){toast('Enter a client name','err');return}
   let al=[];if(qType!=='Flooring')al=[...bLines];if(qType!=='Blinds')al=[...al,...fLines];
-  const sub=al.reduce((s,l)=>s+(+l.qty||1)*(+l.price||0),0);
+  const bSub=qType!=='Flooring'?bLines.reduce((s,l)=>s+(+l.qty||1)*(+l.price||0),0):0;
+  const fSub=qType!=='Blinds'?fLines.reduce((s,l)=>s+(+l.price||0),0):0;
+  const sub=bSub+fSub;
   const discPct=Math.min(100,Math.max(0,+document.getElementById('q-disc').value||0));
   const discAmt=sub*discPct/100;
   const afterDisc=sub-discAmt;
@@ -1286,7 +1299,7 @@ async function saveUserChanges(uid){
 
 async function sendResetEmail(email,name){
   const{error}=await db.auth.resetPasswordForEmail(email,{
-    redirectTo:'https://blindsflooring.github.io/blinds-flooring-studio'
+    redirectTo:'https://blindsflooring.github.io/blinds-flooring-studio/'
   });
   if(error){toast('Failed to send reset: '+error.message,'err');return}
   // Find the user id to show inline message
@@ -1333,10 +1346,20 @@ function buildPDF(j,docType){
   const minRows=fl?12:20;
   const dr=lines.map((l,i)=>{const lt=(+l.qty||1)*(+l.price||0);const bg=i%2===0?'#f9f9f9':'#fff';return fl
     ?`<tr style="background:${bg}"><td style="padding:5px 8px;font-size:10px">${l.desc||''}</td><td style="padding:5px 8px;font-size:10px;text-align:center">${l.qty||''}</td><td style="padding:5px 8px;font-size:10px;text-align:center">${l.width||''}</td><td style="padding:5px 8px;font-size:10px;text-align:center">${l.colour||''}</td><td style="padding:5px 8px;font-size:10px;text-align:right">${lt>0?R(lt):''}</td></tr>`
-    :`<tr style="background:${bg}"><td style="padding:5px 8px;font-size:10px">${l.desc||''}</td><td style="padding:5px 8px;font-size:10px;text-align:center">${l.qty||''}</td>${pdfOpts['show-measurements']?`<td style="padding:5px 8px;font-size:10px;text-align:center">${l.width||''}</td><td style="padding:5px 8px;font-size:10px;text-align:center">${l.drop||''}</td>`:''} ${pdfOpts['show-colour']?`<td style="padding:5px 8px;font-size:10px;text-align:center">${l.colour||''}</td>`:''}<td style="padding:5px 8px;font-size:10px;text-align:right">${lt>0?R(lt):''}</td></tr>`});
+    :`<tr style="background:${bg}">
+    <td style="padding:5px 8px;font-size:10px;width:30%">${l.desc||'&nbsp;'}</td>
+    <td style="padding:5px 8px;font-size:10px;text-align:center;width:6%">${l.qty||''}</td>
+    ${pdfOpts['show-measurements']?`<td style="padding:5px 8px;font-size:10px;text-align:center;width:9%">${l.width||''}</td><td style="padding:5px 8px;font-size:10px;text-align:center;width:9%">${l.drop||''}</td>`:''}
+    ${pdfOpts['show-type']?`<td style="padding:5px 8px;font-size:10px;text-align:center;width:13%">${l.btype||''}</td>`:''}
+    ${pdfOpts['show-fabric']?`<td style="padding:5px 8px;font-size:10px;text-align:center;width:13%">${l.fabric||''}</td>`:''}
+    ${pdfOpts['show-colour']?`<td style="padding:5px 8px;font-size:10px;text-align:center;width:13%">${l.colour||''}</td>`:''}
+    <td style="padding:5px 8px;font-size:10px;text-align:right">${lt>0?R(lt):''}</td>
+  </tr>`});
   for(let i=lines.length;i<minRows;i++){const bg=i%2===0?'#f9f9f9':'#fff';const measCols=pdfOpts['show-measurements']?'<td></td><td></td>':'';
+  const typeCol=pdfOpts['show-type']?'<td></td>':'';
+  const fabricCol=pdfOpts['show-fabric']?'<td></td>':'';
   const colourCol=pdfOpts['show-colour']?'<td></td>':'';
-  const e=fl?'<td></td><td></td><td></td><td></td>':`<td></td><td></td>${measCols}${colourCol}<td></td>`;dr.push(`<tr style="background:${bg}"><td style="padding:5px 8px;font-size:10px">&nbsp;</td>${e}</tr>`)}
+  const e=fl?'<td></td><td></td><td></td><td></td>':`<td></td><td></td>${measCols}${typeCol}${fabricCol}${colourCol}<td></td>`;dr.push(`<tr style="background:${bg}"><td style="padding:5px 8px;font-size:10px">&nbsp;</td>${e}</tr>`)}
   const th=fl
     ?`<tr style="background:#1a1a1a;color:#fff"><td style="padding:6px 8px;font-size:10px;font-weight:700;width:32%">LOCATION / DESCRIPTION</td><td style="padding:6px 8px;font-size:10px;font-weight:700;text-align:center;width:10%">M²/LM</td><td style="padding:6px 8px;font-size:10px;font-weight:700;text-align:center;width:22%">FLOOR TYPE</td><td style="padding:6px 8px;font-size:10px;font-weight:700;text-align:center;width:18%">COLOUR</td><td style="padding:6px 8px;font-size:10px;font-weight:700;text-align:right;width:18%">TOTAL (excl VAT)</td></tr>`
     :`<tr style="background:#1a1a1a;color:#fff"><td style="padding:6px 8px;font-size:10px;font-weight:700;width:28%">DESCRIPTION / ALLOCATION</td><td style="padding:6px 8px;font-size:10px;font-weight:700;text-align:center;width:7%">QTY</td><td style="padding:6px 8px;font-size:10px;font-weight:700;text-align:center;width:12%">WIDTH</td><td style="padding:6px 8px;font-size:10px;font-weight:700;text-align:center;width:12%">DROP</td><td style="padding:6px 8px;font-size:10px;font-weight:700;text-align:center;width:18%">COLOUR/TYPE</td><td style="padding:6px 8px;font-size:10px;font-weight:700;text-align:right;width:23%">TOTAL (excl VAT)</td></tr>`;
@@ -1720,7 +1743,9 @@ function removeDed(repId,month,year,i){
 
 // ── PDF TOGGLE OPTIONS ────────────────────────────────────
 const pdfOpts={
-  'show-measurements': false,  // hidden by default
+  'show-measurements': false,  // hidden by default - protect your specs
+  'show-type':   true,         // shown by default
+  'show-fabric': true,         // shown by default
   'show-colour': true,         // shown by default
 };
 
@@ -1737,7 +1762,6 @@ function toggleOpt(key){
 }
 
 function initToggles(){
-  // Set initial visual state for all toggles
   Object.keys(pdfOpts).forEach(key=>{
     const on=pdfOpts[key];
     ['','2'].forEach(suffix=>{
