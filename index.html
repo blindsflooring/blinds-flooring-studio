@@ -674,6 +674,60 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(
   </div>
 </div>
 
+<div class="overlay hidden" id="m-client-view" onclick="if(event.target===this)closeM('m-client-view')">
+  <div class="modal wide">
+    <div class="modal-hdr">
+      <span class="modal-title" id="cv-title">Client Details</span>
+      <button class="btn btn-sm btn-ghost" onclick="closeM('m-client-view')">&#10005;</button>
+    </div>
+    <div id="cv-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="cv-del-btn" style="margin-right:auto" onclick="deleteClient()">Delete Client</button>
+      <button class="btn" onclick="closeM('m-client-view')">Close</button>
+      <button class="btn btn-primary" onclick="saveClientEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="m-client-view" onclick="if(event.target===this)closeM('m-client-view')">
+  <div class="modal wide">
+    <div class="modal-hdr">
+      <span class="modal-title" id="mcv-title">Client</span>
+      <button class="btn btn-sm btn-ghost" onclick="closeM('m-client-view')">&#10005;</button>
+    </div>
+    <div id="mcv-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="mcv-del" style="margin-right:auto" onclick="deleteClient()">Delete Client</button>
+      <button class="btn" onclick="closeM('m-client-view')">Close</button>
+      <button class="btn btn-primary" onclick="editClientModal()">&#9998; Edit</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="m-client-edit" onclick="if(event.target===this)closeM('m-client-edit')">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-title" id="mce-title">Edit Client</span>
+      <button class="btn btn-sm btn-ghost" onclick="closeM('m-client-edit')">&#10005;</button>
+    </div>
+    <div class="fg fg2">
+      <div class="ff"><label>First Name</label><input id="ce-fn" placeholder="Jane"></div>
+      <div class="ff"><label>Last Name</label><input id="ce-ln" placeholder="Smith"></div>
+      <div class="ff" style="grid-column:1/-1"><label>Company Name <span style="font-weight:400;text-transform:none;color:var(--text3)">(optional)</span></label><input id="ce-co" placeholder="ABC Builders (Pty) Ltd"></div>
+      <div class="ff"><label>Phone</label><input id="ce-ph" placeholder="082 000 0000"></div>
+      <div class="ff"><label>Email</label><input id="ce-em" placeholder="jane@email.com"></div>
+      <div class="ff"><label>VAT Number</label><input id="ce-vat" placeholder="4123456789"></div>
+      <div class="ff"><label>Area</label><input id="ce-ar" placeholder="Gansbaai"></div>
+      <div class="ff" style="grid-column:1/-1"><label>Billing Address</label><input id="ce-ad" placeholder="12 Main Rd"></div>
+    </div>
+    <input type="hidden" id="ce-id">
+    <div class="modal-actions">
+      <button class="btn" onclick="closeM('m-client-edit')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveClientEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay hidden" id="m-job" onclick="if(event.target===this)closeM('m-job')">
   <div class="modal wide"><div class="modal-hdr"><span class="modal-title" id="mj-title">Job</span><button class="btn btn-sm btn-ghost" onclick="closeM('m-job')">&#10005;</button></div>
     <div id="mj-body"></div>
@@ -1773,8 +1827,164 @@ function initToggles(){
   });
 }
 
+
+// ── CLIENT VIEW / EDIT ────────────────────────────────────
+let editClientId = null;
+
+
+
+
+// ── CLIENT VIEW & EDIT ────────────────────────────────────
+let viewClientId = null;
+
+function openClientM(clientId, clientNameFallback){
+  viewClientId = clientId||null;
+  let c = clientId ? clients.find(x=>String(x.id)===String(clientId)) : null;
+  if(!c && clientNameFallback){
+    c = clients.find(x=>x.name===clientNameFallback)||{name:clientNameFallback,id:null};
+  }
+  if(!c){toast('Client not found','err');return;}
+  const clientName = c.name||clientNameFallback||'Unknown';
+  const cJobs = jobs.filter(j=>cName(j)===clientName);
+  const billed = cJobs.reduce((s,j)=>s+(+j.price||0),0);
+  const received = cJobs.reduce((s,j)=>s+(+j.received||0),0);
+  const out = cJobs.reduce((s,j)=>s+(+j.outstanding||0),0);
+
+  // Year-by-year breakdown
+  const yearMap={};
+  cJobs.forEach(j=>{
+    const y=(j.quote_date||'').slice(0,4)||'Unknown';
+    if(!yearMap[y])yearMap[y]={jobs:0,billed:0,received:0,out:0};
+    yearMap[y].jobs++;yearMap[y].billed+=+j.price||0;yearMap[y].received+=+j.received||0;yearMap[y].out+=+j.outstanding||0;
+  });
+  const years=Object.keys(yearMap).sort().reverse();
+
+  document.getElementById('mcv-title').textContent = clientName+(c.company?' — '+c.company:'');
+  document.getElementById('mcv-del').style.display = (CAN.deleteJob()&&c.id)?'':'none';
+
+  document.getElementById('mcv-body').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div style="background:#f0fafa;border-radius:8px;padding:14px;border-left:3px solid var(--teal)">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--teal);margin-bottom:8px">Contact Details</div>
+        ${c.company?`<div style="font-weight:700;color:var(--teal);font-size:13px;margin-bottom:4px">${c.company}</div>`:''}
+        <div style="font-weight:600;font-size:14px;margin-bottom:8px">${clientName}</div>
+        ${c.phone?`<div style="font-size:13px;margin-bottom:4px">&#128222; ${c.phone}</div>`:''}
+        ${c.email?`<div style="font-size:13px;margin-bottom:4px">&#9993; ${c.email}</div>`:''}
+        ${c.vat_number?`<div style="font-size:12px;color:var(--text3);margin-top:4px">VAT: <strong>${c.vat_number}</strong></div>`:''}
+        ${c.address?`<div style="font-size:12px;color:var(--text2);margin-top:8px;padding-top:8px;border-top:1px solid #c8eaeb">&#127968; ${c.address}</div>`:''}
+        ${c.area?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${c.area}</div>`:''}
+        ${!c.id?`<div style="margin-top:10px;padding:8px;background:var(--orange-bg);border-radius:6px;font-size:11px;color:var(--orange)">&#9888; Not saved as a client record yet.<br><button class="btn btn-sm btn-amber" style="margin-top:6px" onclick="closeM('m-client-view');openM('m-client')">Add to Clients</button></div>`:''}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="metric" style="padding:12px"><div class="metric-label">Total Jobs</div><div class="metric-val mv-info">${cJobs.length}</div></div>
+          <div class="metric" style="padding:12px"><div class="metric-label">Total Billed</div><div class="metric-val" style="font-size:15px">${R(billed)}</div></div>
+          <div class="metric" style="padding:12px"><div class="metric-label">Total Received</div><div class="metric-val mv-success" style="font-size:15px">${R(received)}</div></div>
+          <div class="metric" style="padding:12px;border-left:3px solid ${out>0?'var(--red)':'var(--green)'}">
+            <div class="metric-label">Outstanding</div>
+            <div class="metric-val ${out>0?'mv-danger':'mv-success'}" style="font-size:15px">${R(out)}</div>
+          </div>
+        </div>
+        ${years.length?`<div style="background:#f0fafa;border-radius:8px;padding:10px 12px">
+          <div style="font-weight:700;color:var(--teal);margin-bottom:8px;font-size:10px;text-transform:uppercase;letter-spacing:0.05em">Year by Year</div>
+          ${years.map(y=>{const d=yearMap[y];return`
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #c8eaeb;font-size:12px">
+              <span style="font-weight:700;color:var(--text);width:45px">${y}</span>
+              <span style="color:var(--text3)">${d.jobs} job${d.jobs!==1?'s':''}</span>
+              <span style="font-weight:600;color:var(--teal)">${R(d.billed)}</span>
+              <span style="font-weight:600;color:${d.out>0?'var(--red)':'var(--green)'}">${d.out>0?'-'+R(d.out):'&#10003; Settled'}</span>
+            </div>`}).join('')}
+        </div>`:''}
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:0.05em">Full Job History</div>
+      <button class="btn btn-sm btn-ghost no-print" onclick="filterByClient('${clientName.replace(/'/g,"\'")}');closeM('m-client-view')">View in Jobs →</button>
+    </div>
+    ${cJobs.length?`
+    <div class="tbl-wrap"><table class="tbl" style="border:1px solid #c8eaeb;border-radius:8px;overflow:hidden">
+      <thead><tr><th>Ref</th><th>Description</th><th>Branch</th><th class="num">Billed</th><th class="num">Received</th><th class="num">Outstanding</th><th>Status</th><th>Date</th></tr></thead>
+      <tbody>${cJobs.sort((a,b)=>(b.quote_date||'').localeCompare(a.quote_date||'')).map(j=>`
+        <tr style="cursor:pointer" onclick="closeM('m-client-view');openJobM(${j.id})">
+          <td style="font-family:'DM Mono',monospace;color:var(--teal);font-weight:700">${j.ref}</td>
+          <td style="font-size:12px">${j.type||'Blinds'}${j.site_address?`<div style="font-size:10px;color:var(--text3)">&#128205; ${j.site_address}</div>`:''}</td>
+          <td><span class="bpill" style="font-size:9px">${branchName(j.branch_id)}</span></td>
+          <td class="num" style="font-weight:600">${R(j.price)}</td>
+          <td class="num" style="color:var(--green)">${R(j.received||0)}</td>
+          <td class="num" style="color:${(+j.outstanding||0)>0?'var(--red)':'var(--text3)'};font-weight:${(+j.outstanding||0)>0?'600':'400'}">${(+j.outstanding||0)>0?R(j.outstanding):'—'}</td>
+          <td>${sB(j.status)}</td>
+          <td style="font-size:11px;color:var(--text3)">${j.quote_date||'—'}</td>
+        </tr>`).join('')}
+      </tbody>
+      <tfoot>
+        <tr style="background:var(--teal);color:#fff;font-weight:700">
+          <td colspan="3" style="padding:8px 12px">TOTAL — ${clientName}</td>
+          <td class="num" style="padding:8px 12px">${R(billed)}</td>
+          <td class="num" style="padding:8px 12px;color:#ccffee">${R(received)}</td>
+          <td class="num" style="padding:8px 12px;color:${out>0?'#ffcccc':'#ccffee'}">${out>0?R(out):'Settled ✓'}</td>
+          <td colspan="2" style="padding:8px 12px"></td>
+        </tr>
+      </tfoot>
+    </table></div>`
+    :'<p style="color:var(--text3);font-size:13px;padding:12px 0">No jobs yet for this client</p>'}
+  `;
+  openM('m-client-view');
+}
+
+function editClientModal(){
+  const c = clients.find(x=>String(x.id)===String(viewClientId));
+  if(!c){toast('Client not in database — use Add Client to save their details first','warn');return;}
+  closeM('m-client-view');
+  const parts=(c.name||'').trim().split(' ');
+  document.getElementById('ce-fn').value=parts[0]||'';
+  document.getElementById('ce-ln').value=parts.slice(1).join(' ')||'';
+  document.getElementById('ce-co').value=c.company||'';
+  document.getElementById('ce-ph').value=c.phone||'';
+  document.getElementById('ce-em').value=c.email||'';
+  document.getElementById('ce-vat').value=c.vat_number||'';
+  document.getElementById('ce-ar').value=c.area||'';
+  document.getElementById('ce-ad').value=c.address||'';
+  document.getElementById('ce-id').value=c.id;
+  document.getElementById('mce-title').textContent='Edit — '+c.name;
+  openM('m-client-edit');
+}
+
+async function saveClientEdit(){
+  const id=document.getElementById('ce-id').value;
+  const fn=document.getElementById('ce-fn').value.trim();
+  if(!fn){toast('Enter a name','err');return;}
+  const{error}=await db.from('bf_clients').update({
+    name:fn+' '+document.getElementById('ce-ln').value.trim(),
+    company:document.getElementById('ce-co').value.trim(),
+    phone:document.getElementById('ce-ph').value.trim(),
+    email:document.getElementById('ce-em').value.trim(),
+    vat_number:document.getElementById('ce-vat').value.trim(),
+    area:document.getElementById('ce-ar').value.trim(),
+    address:document.getElementById('ce-ad').value.trim(),
+  }).eq('id',id);
+  if(error){toast('Save failed: '+error.message,'err');return;}
+  closeM('m-client-edit');
+  toast('Client updated','ok');
+  const{data}=await db.from('bf_clients').select('*').order('name');
+  clients=data||[];renderClients();
+}
+
+async function deleteClient(){
+  const c=clients.find(x=>String(x.id)===String(viewClientId));
+  if(!c)return;
+  if(!confirm('Delete '+c.name+'? Their jobs will remain.'))return;
+  const{error}=await db.from('bf_clients').delete().eq('id',viewClientId);
+  if(error){toast('Delete failed: '+error.message,'err');return;}
+  closeM('m-client-view');
+  toast('Client deleted','ok');
+  const{data}=await db.from('bf_clients').select('*').order('name');
+  clients=data||[];renderClients();
+}
+
 // BOOT
 (async()=>{
+
   const{data:{session}}=await db.auth.getSession();
   if(session?.user)await bootApp(session.user);
 })();
