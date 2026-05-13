@@ -197,6 +197,12 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(
 #toast.show{opacity:1;transform:translateY(0)}
 #toast.ok{background:var(--green)}#toast.err{background:var(--red)}#toast.warn{background:var(--amber)}
 #lbar{position:fixed;top:0;left:0;height:3px;background:#00aab2;width:0;transition:width 0.3s;z-index:9999}
+
+.tab-bar{display:flex;gap:4px;margin-bottom:16px;border-bottom:2px solid #c8eaeb;padding-bottom:0}
+.tab-btn{padding:8px 16px;font-size:12px;font-weight:600;border:none;background:transparent;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.12s;font-family:'DM Sans',sans-serif;border-radius:6px 6px 0 0}
+.tab-btn:hover{color:var(--teal);background:#f0fafa}
+.tab-btn.active{color:var(--teal);border-bottom-color:var(--teal);background:#f0fafa}
+.tab-panel{display:none}.tab-panel.active{display:block}
 .hidden{display:none!important}
 
 @media(max-width:768px){
@@ -321,6 +327,8 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(
       <select id="fp" onchange="renderJobs()"><option value="">All payments</option><option>Paid</option><option>Partial</option><option>Unpaid</option></select>
       <select id="ft" onchange="renderJobs()"><option value="">All types</option><option>Blinds</option><option>Flooring</option><option>Blinds + Flooring</option></select>
       <select id="fb" onchange="renderJobs()"><option value="">All branches</option></select>
+      <select id="fy" onchange="renderJobs()"><option value="">All years</option></select>
+      <select id="fm" onchange="renderJobs()"><option value="">All months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select>
       <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
         <span id="jobs-count" style="font-size:11px;color:var(--text3)"></span>
         <div class="view-toggle"><button class="view-btn active" id="vbtn-c" onclick="setView('cards')">&#8863;</button><button class="view-btn" id="vbtn-t" onclick="setView('table')">&#9776;</button></div>
@@ -363,8 +371,11 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(
         <div class="ff"><label>Document</label><select id="q-doc"><option>Quotation</option><option>Invoice</option></select></div>
       </div>
       <div class="fg fg2">
-        <div class="ff"><label>Branch</label><select id="q-branch"></select></div>
+        <div class="ff"><label>Branch</label><select id="q-branch" onchange="updateRefPreview()"></select></div>
         <div class="ff"><label>Assigned Rep</label><select id="q-rep"></select></div>
+      </div>
+      <div style="background:#f0fafa;border:1px solid #c8eaeb;border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--teal)">
+        Job reference will be: <strong id="ref-preview">—</strong>
       </div>
 
       <div id="s-blinds">
@@ -414,24 +425,56 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(
 
   <!-- PROFIT REPORT -->
   <div class="page" id="page-report">
-    <div class="rep-grid" id="rep-summary"></div>
-    <div class="card" style="margin-bottom:14px">
-      <div class="card-header"><span class="card-title">Month-by-Month Profit</span><button class="btn btn-sm no-print" onclick="window.print()">Print</button></div>
-      <div class="tbl-wrap"><table class="tbl">
-        <thead><tr><th>Month</th><th class="num">Jobs</th><th class="num">Revenue incl VAT</th><th class="num">Excl VAT</th><th class="num">Cost</th><th class="num">Gross Profit</th><th class="num">GP %</th><th class="num">Received</th><th class="num">Outstanding</th></tr></thead>
-        <tbody id="rep-body"></tbody><tfoot id="rep-foot"></tfoot>
-      </table></div>
-      <div style="margin-top:18px">
-        <div style="display:flex;align-items:flex-end;gap:6px;height:120px;margin-bottom:4px" id="rep-chart"></div>
-        <div id="rep-labels" style="display:flex;gap:6px;font-size:10px;color:var(--text3)"></div>
-        <div style="display:flex;gap:14px;font-size:11px;color:var(--text2);margin-top:8px">
-          <span><span style="display:inline-block;width:10px;height:10px;background:var(--accent);border-radius:2px;margin-right:4px"></span>Revenue</span>
-          <span><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:4px"></span>Gross Profit</span>
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab('tab-monthly',this)">Month by Month</button>
+      <button class="tab-btn" onclick="showTab('tab-yoy',this)">Year on Year</button>
+      <button class="tab-btn" onclick="showTab('tab-finyear',this)">Financial Year</button>
+      <button class="tab-btn" onclick="showTab('tab-branch',this)">Branch vs Branch</button>
+      <button class="tab-btn" onclick="showTab('tab-clients',this)">Top Clients</button>
+    </div>
+    <div class="tab-panel active" id="tab-monthly">
+      <div class="rep-grid" id="rep-summary"></div>
+      <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap">
+        <select id="rep-year" onchange="renderReport()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface)"><option value="">All years</option></select>
+        <select id="rep-branch" onchange="renderReport()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface)"><option value="">All branches</option></select>
+        <button class="btn btn-sm no-print" onclick="window.print()">Print</button>
+      </div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-header"><span class="card-title">Month-by-Month Profit</span></div>
+        <div class="tbl-wrap"><table class="tbl">
+          <thead><tr><th>Period</th><th class="num">Jobs</th><th class="num">Revenue incl VAT</th><th class="num">Excl VAT</th><th class="num">Cost</th><th class="num">Gross Profit</th><th class="num">GP %</th><th class="num">Received</th><th class="num">Outstanding</th></tr></thead>
+          <tbody id="rep-body"></tbody><tfoot id="rep-foot"></tfoot>
+        </table></div>
+        <div style="margin-top:18px">
+          <div style="display:flex;align-items:flex-end;gap:6px;height:120px;margin-bottom:4px" id="rep-chart"></div>
+          <div id="rep-labels" style="display:flex;gap:6px;font-size:10px;color:var(--text3)"></div>
+          <div style="display:flex;gap:14px;font-size:11px;color:var(--text2);margin-top:8px">
+            <span><span style="display:inline-block;width:10px;height:10px;background:var(--teal);border-radius:2px;margin-right:4px"></span>Revenue</span>
+            <span><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:4px"></span>Gross Profit</span>
+          </div>
         </div>
       </div>
     </div>
-    <div class="card"><div class="card-header"><span class="card-title">Top Clients by Revenue</span></div>
-      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Client</th><th class="num">Jobs</th><th class="num">Revenue</th><th class="num">GP</th><th class="num">GP %</th></tr></thead><tbody id="top-clients"></tbody></table></div>
+    <div class="tab-panel" id="tab-yoy">
+      <div class="card"><div class="card-header"><span class="card-title">Year-on-Year Comparison</span><span style="font-size:11px;color:var(--text3)">Same month across different years</span></div>
+        <div class="tbl-wrap"><table class="tbl"><thead id="yoy-head"></thead><tbody id="yoy-body"></tbody></table></div>
+      </div>
+    </div>
+    <div class="tab-panel" id="tab-finyear">
+      <div class="card"><div class="card-header"><span class="card-title">Financial Year Summary</span><span style="font-size:11px;color:var(--text3)">March – February (SA financial year)</span></div>
+        <div class="tbl-wrap"><table class="tbl">
+          <thead><tr><th>Financial Year</th><th class="num">Jobs</th><th class="num">Revenue incl VAT</th><th class="num">Excl VAT</th><th class="num">GP</th><th class="num">GP %</th><th class="num">Received</th><th class="num">Outstanding</th></tr></thead>
+          <tbody id="finyear-body"></tbody>
+        </table></div>
+      </div>
+    </div>
+    <div class="tab-panel" id="tab-branch">
+      <div class="card"><div class="card-header"><span class="card-title">Branch Performance Comparison</span></div><div id="branch-compare"></div></div>
+    </div>
+    <div class="tab-panel" id="tab-clients">
+      <div class="card"><div class="card-header"><span class="card-title">Top Clients by Revenue</span></div>
+        <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Client</th><th class="num">Jobs</th><th class="num">Revenue</th><th class="num">GP</th><th class="num">GP %</th></tr></thead><tbody id="top-clients"></tbody></table></div>
+      </div>
     </div>
   </div>
 
@@ -461,7 +504,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(
         <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Branch</th></tr></thead><tbody id="admin-users"></tbody></table></div>
       </div>
       <div class="card"><div class="card-header"><span class="card-title">Branches</span><button class="btn btn-primary btn-sm no-print" onclick="openM('m-addbranch')">+ Add Branch</button></div>
-        <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Branch</th><th>Town</th><th>Active</th></tr></thead><tbody id="admin-branches"></tbody></table></div>
+        <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Branch</th><th>Prefix</th><th>Town</th><th>Active</th></tr></thead><tbody id="admin-branches"></tbody></table></div>
       </div>
     </div>
   </div>
@@ -511,8 +554,9 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(
 
 <div class="overlay hidden" id="m-addbranch" onclick="if(event.target===this)closeM('m-addbranch')">
   <div class="modal"><div class="modal-hdr"><span class="modal-title">Add Branch</span><button class="btn btn-sm btn-ghost" onclick="closeM('m-addbranch')">&#10005;</button></div>
-    <div class="fg fg2">
+    <div class="fg fg3">
       <div class="ff"><label>Branch Name</label><input id="ab-name" placeholder="Hermanus"></div>
+      <div class="ff"><label>Ref Prefix</label><input id="ab-prefix" placeholder="HER" maxlength="4" style="text-transform:uppercase"></div>
       <div class="ff"><label>Town</label><input id="ab-town" placeholder="Hermanus"></div>
     </div>
     <div class="modal-actions"><button class="btn" onclick="closeM('m-addbranch')">Cancel</button><button class="btn btn-primary" onclick="addBranch()">Add Branch</button></div>
@@ -620,7 +664,17 @@ function populateUI(){
   document.getElementById('audit-branch').innerHTML='<option value="">All branches</option>'+bOpts;
   document.getElementById('audit-user').innerHTML='<option value="">All users</option>'+allUsers.map(u=>`<option value="${u.id}">${u.full_name}</option>`).join('');
   document.getElementById('au-branch').innerHTML=bOpts;
+  // Year filter for jobs
+  const jobYears=[...new Set(jobs.map(j=>(j.quote_date||'').slice(0,4)).filter(Boolean))].sort().reverse();
+  const fyEl=document.getElementById('fy');
+  if(fyEl)fyEl.innerHTML='<option value="">All years</option>'+jobYears.map(y=>`<option value="${y}">${y}</option>`).join('');
+  // Year + branch filter for report
+  const ryEl=document.getElementById('rep-year');
+  if(ryEl)ryEl.innerHTML='<option value="">All years</option>'+jobYears.map(y=>`<option value="${y}">${y}</option>`).join('');
+  const rbEl=document.getElementById('rep-branch');
+  if(rbEl)rbEl.innerHTML='<option value="">All branches</option>'+bOpts;
   document.getElementById('sb-branch').textContent=role()==='owner'?'All Branches':branchName(myBranch());
+  updateRefPreview();
   const tb=document.getElementById('topbar-branch');
   if(role()!=='owner'){tb.textContent=branchName(myBranch());tb.classList.remove('hidden')}
 }
@@ -682,11 +736,11 @@ function setView(v){jobsView=v;document.getElementById('vbtn-c').classList.toggl
 
 function renderJobs(){
   const s=document.getElementById('job-search').value||'';
-  const fs=document.getElementById('fs').value,fp=document.getElementById('fp').value,ft=document.getElementById('ft').value,fb=document.getElementById('fb').value;
+  const fs=document.getElementById('fs').value,fp=document.getElementById('fp').value,ft=document.getElementById('ft').value,fb=document.getElementById('fb').value,fy=document.getElementById('fy')?.value||'',fm=document.getElementById('fm')?.value||'';
   const f=visJobs().filter(j=>{
     if(s&&!cName(j).toLowerCase().includes(s.toLowerCase()))return false;
     if(fs&&j.status!==fs)return false;if(fp&&j.paystatus!==fp)return false;
-    if(ft&&j.type!==ft)return false;if(fb&&String(j.branch_id)!==String(fb))return false;return true;
+    if(ft&&j.type!==ft)return false;if(fb&&String(j.branch_id)!==String(fb))return false;if(fy&&!(j.quote_date||'').startsWith(fy))return false;if(fm&&(j.quote_date||'').slice(5,7)!==fm)return false;return true;
   });
   document.getElementById('jobs-count').textContent=`${f.length} of ${visJobs().length}`;renderJobList(f);
 }
@@ -837,7 +891,7 @@ function initForm(jobId){
     document.getElementById('q-disc').value=0;
     qType='Blinds';bLines=[{desc:'',qty:1,price:0,width:'',drop:'',colour:''}];fLines=[{desc:'',qty:1,price:0,colour:''}];
   }
-  setQT(qType);renderL('b');renderL('f');
+  setQT(qType);renderL('b');renderL('f');updateRefPreview();
   const names=[...new Set(jobs.map(j=>cName(j))),...clients.map(c=>c.name)].filter(Boolean).sort();
   document.getElementById('cl-list').innerHTML=names.map(n=>`<option value="${n}">`).join('');
   if(!CAN.capturePayment()){['q-pay','q-rec','q-meth'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=true})}
@@ -915,8 +969,7 @@ async function saveQ(){
     ({error,data}=await db.from('bf_jobs').update(jd).eq('id',editId).select());
     if(!error&&data?.[0])await logAudit(editId,data[0].ref,'edited',`Status: ${jd.status}, Payment: ${jd.paystatus}${discPct>0?', Discount: '+discPct+'%':''}`);
   } else {
-    const mx=jobs.reduce((m,j)=>{const n=parseInt((j.ref||'').replace('BF-',''));return n>m?n:m},2025100);
-    jd.ref='BF-'+(mx+1);jd.created_by=currentUser?.id;jd.created_by_name=userProfile?.full_name||currentUser?.email;
+    jd.ref=getNextRef(branchId);jd.created_by=currentUser?.id;jd.created_by_name=userProfile?.full_name||currentUser?.email;
     ({error,data}=await db.from('bf_jobs').insert(jd).select());
     if(!error&&data?.[0])await logAudit(data[0].id,data[0].ref,'created',`Quote for ${client} — ${R(tot)}${discPct>0?' ('+discPct+'% discount)':''}`);
   }
@@ -971,7 +1024,11 @@ function renderConversions(){
 }
 
 function renderReport(){
-  const vj=CAN.seeAllBranches()?jobs:jobs.filter(j=>j.branch_id===myBranch());
+  const repYear=document.getElementById('rep-year')?.value||'';
+  const repBranch=document.getElementById('rep-branch')?.value||'';
+  let vj=CAN.seeAllBranches()?jobs:jobs.filter(j=>j.branch_id===myBranch());
+  if(repYear)vj=vj.filter(j=>(j.quote_date||'').startsWith(repYear));
+  if(repBranch)vj=vj.filter(j=>String(j.branch_id)===String(repBranch));
   const bk={};MONTHS.forEach(m=>bk[m]={j:0,rev:0,cost:0,rec:0,out:0});bk['No Date']={j:0,rev:0,cost:0,rec:0,out:0};
   vj.forEach(j=>{const d=j.install_date||'';let b='No Date';if(d){const k=d.slice(5,7);if(MM[k])b=MM[k]}if(!bk[b])bk[b]={j:0,rev:0,cost:0,rec:0,out:0};bk[b].j++;bk[b].rev+=+j.price||0;bk[b].cost+=+j.cost||0;bk[b].rec+=+j.received||0;bk[b].out+=+j.outstanding||0});
   const keys=[...MONTHS,'No Date'].filter(k=>bk[k]&&bk[k].j>0);
@@ -984,8 +1041,7 @@ function renderReport(){
   const mxR=Math.max(...rows.map(r=>r.b.rev))||1,mxG=Math.max(...rows.map(r=>r.gp))||1,ch=110;
   document.getElementById('rep-chart').innerHTML=rows.map(({m,b,gp})=>`<div style="display:flex;gap:3px;align-items:flex-end;flex:1"><div style="width:14px;background:var(--accent);border-radius:3px 3px 0 0;height:${Math.max(2,Math.round(b.rev/mxR*ch))}px"></div><div style="width:10px;background:var(--green);border-radius:3px 3px 0 0;height:${Math.max(2,Math.round(Math.max(0,gp)/mxG*ch))}px"></div></div>`).join('');
   document.getElementById('rep-labels').innerHTML=rows.map(({m})=>`<div style="flex:1;text-align:center">${m}</div>`).join('');
-  const cm={};vj.forEach(j=>{const n=cName(j);if(!cm[n])cm[n]={j:0,rev:0,cost:0};cm[n].j++;cm[n].rev+=+j.price||0;cm[n].cost+=+j.cost||0});
-  document.getElementById('top-clients').innerHTML=Object.entries(cm).map(([n,d])=>({n,...d,gp:d.rev/1.15-d.cost,gpp:d.rev>0?(d.rev/1.15-d.cost)/(d.rev/1.15)*100:0})).sort((a,b)=>b.rev-a.rev).slice(0,15).map(c=>`<tr><td><div style="display:flex;align-items:center;gap:8px"><div class="avatar" style="width:24px;height:24px;font-size:10px">${ini(c.n)}</div><span style="font-weight:600">${c.n}</span></div></td><td class="num">${c.j}</td><td class="num" style="font-weight:600">${R(c.rev)}</td><td class="num" style="color:var(--green);font-weight:600">${R(c.gp)}</td><td class="num" style="color:${c.gpp>=45?'var(--green)':c.gpp>=30?'var(--amber)':'var(--red)'};font-weight:600">${c.gpp.toFixed(1)}%</td></tr>`).join('');
+  renderTopClients();
 }
 
 function renderAdmin(){
@@ -1003,11 +1059,13 @@ async function addUser(){
 }
 
 async function addBranch(){
-  const name=document.getElementById('ab-name').value.trim(),town=document.getElementById('ab-town').value.trim();
-  if(!name){toast('Enter branch name','err');return}
-  const{error}=await db.from('bf_branches').insert({name,town,active:true});
+  const name=document.getElementById('ab-name').value.trim();
+  const prefix=document.getElementById('ab-prefix')?.value.trim().toUpperCase()||'';
+  const town=document.getElementById('ab-town').value.trim();
+  if(!name||!prefix){toast('Enter branch name and prefix (e.g. HER)','err');return}
+  const{error}=await db.from('bf_branches').insert({name,ref_prefix:prefix,town,active:true});
   if(error){toast('Failed: '+error.message,'err');return}
-  ['ab-name','ab-town'].forEach(id=>document.getElementById(id).value='');
+  ['ab-name','ab-prefix','ab-town'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   closeM('m-addbranch');toast('Branch added','ok');
   const{data}=await db.from('bf_branches').select('*').order('name');branches=data||[];populateUI();renderAdmin();
 }
@@ -1135,6 +1193,138 @@ async function seedData(){
   const rows=SEED.map((r,i)=>({ref:'BF-'+(2025100+i),client_name:r.client,type:'Blinds',address:'',phone:'',email:'',client_vat:'',quote_date:'',install_date:r.install||'',status:r.status,doc_type:'Quotation',paystatus:r.paystatus,price:r.price,cost:r.cost,received:r.received,outstanding:r.outstanding||0,pay_method:r.pay_method,notes:'',lines:JSON.stringify([{desc:'Imported from order index',qty:1,price:+(r.price/1.15).toFixed(2),width:'',drop:'',colour:''}]),branch_id:2,created_by:currentUser?.id,created_by_name:userProfile?.full_name||'System',discount_pct:0}));
   for(let i=0;i<rows.length;i+=20){await db.from('bf_jobs').insert(rows.slice(i,i+20));lbar(40+Math.round(i/rows.length*50))}
   await loadAll();
+}
+
+
+// ── BRANCH REF NUMBERING ──────────────────────────────────
+function branchPrefix(id){return branches.find(b=>b.id===id)?.ref_prefix||'JOB'}
+
+function getNextRef(branchId){
+  const prefix=branchPrefix(branchId);
+  const branchJobs=jobs.filter(j=>j.branch_id===branchId);
+  if(!branchJobs.length)return prefix+'001';
+  const nums=branchJobs.map(j=>{
+    const ref=j.ref||'';
+    const num=parseInt(ref.replace(prefix,''));
+    return isNaN(num)?0:num;
+  });
+  const next=Math.max(0,...nums)+1;
+  return prefix+String(next).padStart(3,'0');
+}
+
+function updateRefPreview(){
+  const branchId=parseInt(document.getElementById('q-branch')?.value);
+  if(branchId&&!editId){
+    document.getElementById('ref-preview').textContent=getNextRef(branchId);
+  } else if(editId){
+    const j=jobs.find(x=>x.id===editId);
+    document.getElementById('ref-preview').textContent=j?.ref||'—';
+  } else {
+    document.getElementById('ref-preview').textContent='Select a branch first';
+  }
+}
+
+// ── TAB SWITCHING ─────────────────────────────────────────
+function showTab(id,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='tab-yoy')renderYoY();
+  if(id==='tab-finyear')renderFinYear();
+  if(id==='tab-branch')renderBranchCompare();
+  if(id==='tab-clients')renderTopClients();
+}
+
+// ── YEAR ON YEAR ─────────────────────────────────────────
+function renderYoY(){
+  const vj=CAN.seeAllBranches()?jobs:jobs.filter(j=>j.branch_id===myBranch());
+  const years=[...new Set(vj.map(j=>(j.quote_date||'').slice(0,4)).filter(Boolean))].sort();
+  if(!years.length){
+    document.getElementById('yoy-head').innerHTML='';
+    document.getElementById('yoy-body').innerHTML='<tr><td colspan="99" style="text-align:center;color:var(--text3);padding:20px">No data yet — year-on-year comparison will appear once you have jobs across multiple years</td></tr>';
+    return;
+  }
+  document.getElementById('yoy-head').innerHTML=`<tr><th>Month</th>${years.map(y=>`<th class="num" colspan="2" style="color:var(--teal)">${y}</th>`).join('')}</tr><tr><th></th>${years.map(()=>'<th class="num" style="font-size:9px;color:var(--teal)">Revenue</th><th class="num" style="font-size:9px;color:var(--green)">GP</th>').join('')}</tr>`;
+  const MONTHS_ALL=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const data={};
+  vj.forEach(j=>{
+    const d=j.quote_date||'';if(!d)return;
+    const y=d.slice(0,4),mi=parseInt(d.slice(5,7))-1;
+    if(!data[mi])data[mi]={};if(!data[mi][y])data[mi][y]={rev:0,cost:0};
+    data[mi][y].rev+=+j.price||0;data[mi][y].cost+=+j.cost||0;
+  });
+  document.getElementById('yoy-body').innerHTML=MONTHS_ALL.map((m,i)=>{
+    const row=years.map(y=>{
+      const d=data[i]?.[y]||{rev:0,cost:0};
+      const gp=d.rev/1.15-d.cost;
+      return`<td class="num">${d.rev>0?R(d.rev):'—'}</td><td class="num" style="color:${gp>0?'var(--green)':'var(--text3)'}">${gp>0?R(gp):'—'}</td>`;
+    }).join('');
+    return`<tr><td style="font-weight:600">${m}</td>${row}</tr>`;
+  }).join('');
+}
+
+// ── FINANCIAL YEAR ────────────────────────────────────────
+function renderFinYear(){
+  const vj=CAN.seeAllBranches()?jobs:jobs.filter(j=>j.branch_id===myBranch());
+  const fyMap={};
+  vj.forEach(j=>{
+    const d=j.quote_date||'';if(!d)return;
+    const y=parseInt(d.slice(0,4)),m=parseInt(d.slice(5,7));
+    const fy=m>=3?y:y-1;
+    const label=`${fy}/${String(fy+1).slice(2)}`;
+    if(!fyMap[label])fyMap[label]={j:0,rev:0,cost:0,rec:0,out:0};
+    fyMap[label].j++;fyMap[label].rev+=+j.price||0;fyMap[label].cost+=+j.cost||0;fyMap[label].rec+=+j.received||0;fyMap[label].out+=+j.outstanding||0;
+  });
+  const keys=Object.keys(fyMap).sort();
+  document.getElementById('finyear-body').innerHTML=keys.length
+    ?keys.map(k=>{
+        const b=fyMap[k];const re=b.rev/1.15;const gp=re-b.cost;const gpp=re>0?gp/re*100:0;
+        return`<tr><td style="font-weight:700;color:var(--teal)">${k}</td><td class="num">${b.j}</td><td class="num" style="font-weight:600">${R(b.rev)}</td><td class="num">${R(re)}</td><td class="num" style="color:var(--green);font-weight:600">${R(gp)}</td><td class="num" style="color:${gpp>=45?'var(--green)':gpp>=30?'var(--amber)':'var(--red)'};font-weight:600">${gpp.toFixed(1)}%</td><td class="num" style="color:var(--green)">${R(b.rec)}</td><td class="num" style="${b.out>0?'color:var(--red);font-weight:600':'color:var(--text3)'}">${b.out>0?R(b.out):'—'}</td></tr>`;
+      }).join('')
+    :'<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:20px">No data yet</td></tr>';
+}
+
+// ── BRANCH VS BRANCH ──────────────────────────────────────
+function renderBranchCompare(){
+  const vj=jobs;
+  const years=[...new Set(vj.map(j=>(j.quote_date||'').slice(0,4)).filter(Boolean))].sort().reverse();
+  let html='';
+  branches.forEach(br=>{
+    const bj=vj.filter(j=>j.branch_id===br.id);
+    if(!bj.length)return;
+    const rev=bj.reduce((s,j)=>s+(+j.price||0),0);
+    const cost=bj.reduce((s,j)=>s+(+j.cost||0),0);
+    const re=rev/1.15,gp=re-cost,gpp=re>0?gp/re*100:0;
+    const out=bj.reduce((s,j)=>s+(+j.outstanding||0),0);
+    html+=`<div style="margin-bottom:24px">
+      <div style="font-size:14px;font-weight:700;color:var(--teal);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #c8eaeb">${br.name} <span style="font-family:'DM Mono',monospace;font-size:12px;background:var(--teal-bg);padding:2px 8px;border-radius:4px">${br.ref_prefix||'—'}</span></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+        <div class="rc"><div class="rc-label">Total Jobs</div><div class="rc-val mv-info">${bj.length}</div></div>
+        <div class="rc"><div class="rc-label">Revenue</div><div class="rc-val mv-info">${R(rev)}</div></div>
+        <div class="rc"><div class="rc-label">Gross Profit</div><div class="rc-val mv-success">${R(gp)}</div></div>
+        <div class="rc"><div class="rc-label">GP %</div><div class="rc-val mv-success">${gpp.toFixed(1)}%</div></div>
+      </div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Year</th><th class="num">Jobs</th><th class="num">Revenue</th><th class="num">Excl VAT</th><th class="num">GP</th><th class="num">GP %</th><th class="num">Outstanding</th></tr></thead><tbody>
+      ${years.map(y=>{
+        const yj=bj.filter(j=>(j.quote_date||'').startsWith(y));
+        if(!yj.length)return'';
+        const yr=yj.reduce((s,j)=>s+(+j.price||0),0);
+        const yc=yj.reduce((s,j)=>s+(+j.cost||0),0);
+        const yre=yr/1.15,ygp=yre-yc,ygpp=yre>0?ygp/yre*100:0;
+        const yout=yj.reduce((s,j)=>s+(+j.outstanding||0),0);
+        return`<tr><td style="font-weight:600">${y}</td><td class="num">${yj.length}</td><td class="num">${R(yr)}</td><td class="num">${R(yre)}</td><td class="num" style="color:var(--green);font-weight:600">${R(ygp)}</td><td class="num" style="color:${ygpp>=45?'var(--green)':ygpp>=30?'var(--amber)':'var(--red)'};font-weight:600">${ygpp.toFixed(1)}%</td><td class="num" style="${yout>0?'color:var(--red);font-weight:600':'color:var(--text3)'}">${yout>0?R(yout):'—'}</td></tr>`;
+      }).join('')}
+      </tbody></table></div>
+    </div>`;
+  });
+  document.getElementById('branch-compare').innerHTML=html||'<p style="color:var(--text3);padding:20px;text-align:center">No branch data yet.</p>';
+}
+
+// ── TOP CLIENTS (used by tab) ─────────────────────────────
+function renderTopClients(){
+  const vj=CAN.seeAllBranches()?jobs:jobs.filter(j=>j.branch_id===myBranch());
+  renderTopClients();
 }
 
 // BOOT
