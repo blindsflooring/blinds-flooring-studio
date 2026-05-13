@@ -1029,14 +1029,25 @@ async function delJob(){
 
 function renderClients(filter=''){
   const cm={};
-  jobs.forEach(j=>{const n=cName(j);if(!cm[n])cm[n]={jobs:0,billed:0,received:0,out:0};cm[n].jobs++;cm[n].billed+=+j.price||0;cm[n].received+=+j.received||0;cm[n].out+=+j.outstanding||0});
-  clients.forEach(c=>{if(!cm[c.name])cm[c.name]={jobs:0,billed:0,received:0,out:0,meta:c};else cm[c.name].meta=c});
+  jobs.forEach(j=>{
+    const n=cName(j);
+    if(!cm[n])cm[n]={jobs:0,billed:0,received:0,out:0};
+    cm[n].jobs++;cm[n].billed+=+j.price||0;cm[n].received+=+j.received||0;cm[n].out+=+j.outstanding||0;
+  });
+  clients.forEach(c=>{
+    if(!cm[c.name])cm[c.name]={jobs:0,billed:0,received:0,out:0,meta:c};
+    else cm[c.name].meta=c;
+  });
   const names=Object.keys(cm).filter(n=>n.toLowerCase().includes(filter.toLowerCase())).sort();
-  document.getElementById('clients-body').innerHTML=names.map(n=>{
+  const tbody=document.getElementById('clients-body');
+  tbody.innerHTML='';
+  names.forEach(n=>{
     const d=cm[n];const m=d.meta||{};
-    const cid=String(m.id||'');
-    const safeN=n.replace(/'/g,"\\'");
-    return`<tr style="cursor:pointer" onclick="openClientM('${cid}','${safeN}')">
+    const tr=document.createElement('tr');
+    tr.style.cursor='pointer';
+    tr.dataset.cid=String(m.id||'');
+    tr.dataset.cname=n;
+    tr.innerHTML=`
       <td><div style="display:flex;align-items:center;gap:9px"><div class="avatar">${ini(n)}</div><div><div style="font-weight:600">${n}</div>${m.company?`<div style="font-size:10px;color:var(--teal)">${m.company}</div>`:''}</div></div></td>
       <td style="font-size:12px;color:var(--teal);font-weight:500">${m.company||''}</td>
       <td style="font-size:12px;color:var(--text2)">${m.phone||''}</td>
@@ -1045,14 +1056,16 @@ function renderClients(filter=''){
       <td class="num">${d.jobs}</td>
       <td class="num" style="font-weight:600">${R(d.billed)}</td>
       <td class="num" style="${d.out>0?'color:var(--red);font-weight:600':'color:var(--text3)'}">${d.out>0?R(d.out):'—'}</td>
-      <td class="no-print" onclick="event.stopPropagation()">
-        <div style="display:flex;gap:4px">
-          <button class="btn btn-sm btn-primary" onclick="openClientM('${cid}','${safeN}')">View</button>
-          <button class="btn btn-sm btn-ghost" onclick="filterByClient('${safeN}')">Jobs</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
+      <td class="no-print"><div style="display:flex;gap:4px">
+        <button class="btn btn-sm btn-primary view-client-btn">View</button>
+        <button class="btn btn-sm btn-ghost jobs-client-btn">Jobs</button>
+      </div></td>`;
+    // Attach events safely using dataset - no string escaping needed
+    tr.querySelector('.view-client-btn').addEventListener('click',e=>{e.stopPropagation();openClientM(tr.dataset.cid,tr.dataset.cname);});
+    tr.querySelector('.jobs-client-btn').addEventListener('click',e=>{e.stopPropagation();filterByClient(tr.dataset.cname);});
+    tr.addEventListener('click',()=>openClientM(tr.dataset.cid,tr.dataset.cname));
+    tbody.appendChild(tr);
+  });
 }
 function filterByClient(n){navTo('jobs',document.getElementById('nav-jobs'));setTimeout(()=>{document.getElementById('job-search').value=n;renderJobs()},50)}
 
@@ -1876,7 +1889,7 @@ function openClientM(clientId, clientNameFallback){
         ${c.vat_number?`<div style="font-size:12px;color:var(--text3);margin-top:4px">VAT: <strong>${c.vat_number}</strong></div>`:''}
         ${c.address?`<div style="font-size:12px;color:var(--text2);margin-top:8px;padding-top:8px;border-top:1px solid #c8eaeb">&#127968; ${c.address}</div>`:''}
         ${c.area?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${c.area}</div>`:''}
-        ${!c.id?`<div style="margin-top:10px;padding:8px;background:var(--orange-bg);border-radius:6px;font-size:11px;color:var(--orange)">&#9888; Not saved as a client record yet.<br><button class="btn btn-sm btn-amber" style="margin-top:6px" onclick="closeM('m-client-view');openM('m-client')">Add to Clients</button></div>`:''}
+        ${!c.id?`<div style="margin-top:10px;padding:8px;background:var(--orange-bg);border-radius:6px;font-size:11px;color:var(--orange)">&#9888; Not saved as a client record yet.<br><button class="btn btn-sm btn-amber" style="margin-top:6px" onclick="prefillAndAddClient()">Add to Clients</button></div>`:''}
       </div>
       <div style="display:flex;flex-direction:column;gap:8px">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
@@ -1983,6 +1996,25 @@ async function deleteClient(){
   toast('Client deleted','ok');
   const{data}=await db.from('bf_clients').select('*').order('name');
   clients=data||[];renderClients();
+}
+
+
+function prefillAndAddClient(){
+  // Try to get info from jobs for this client
+  const clientName = document.getElementById('mcv-title')?.textContent?.split(' — ')[0]||'';
+  const cJobs = jobs.filter(j=>cName(j)===clientName);
+  const j = cJobs[0]||{};
+  // Split name
+  const parts = clientName.trim().split(' ');
+  document.getElementById('c-fn').value = parts[0]||'';
+  document.getElementById('c-ln').value = parts.slice(1).join(' ')||'';
+  document.getElementById('c-ph').value = j.phone||'';
+  document.getElementById('c-em').value = j.email||'';
+  document.getElementById('c-co').value = j.company||'';
+  document.getElementById('c-ad').value = j.address||'';
+  ['c-vat','c-ar'].forEach(id=>document.getElementById(id).value='');
+  closeM('m-client-view');
+  openM('m-client');
 }
 
 // BOOT
