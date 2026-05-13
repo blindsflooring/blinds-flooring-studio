@@ -222,6 +222,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(
 }
 @media print{
   #sidebar,#toast,#lbar,.no-print{display:none!important}
+  .print-only{display:block!important}
   body{display:block;overflow:visible;height:auto}
   #main{height:auto;overflow:visible}
   .page{display:block!important;overflow:visible}
@@ -296,6 +297,9 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(
   </div>
   <div class="nav-item" id="nav-audit" onclick="navTo('audit',this)">
     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Audit Log
+  </div>
+  <div class="nav-item" id="nav-commission" onclick="navTo('commission',this)">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Commission
   </div>
   <div class="nav-item" id="nav-admin" onclick="navTo('admin',this)">
     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>Admin Panel
@@ -494,6 +498,37 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(
   <div class="page" id="page-conversions">
     <div class="card" style="margin-bottom:14px"><div class="card-header"><span class="card-title">Conversion Rates by Rep</span></div><div id="conv-content"></div></div>
     <div class="card"><div class="card-header"><span class="card-title">Branch Performance</span></div><div id="branch-perf"></div></div>
+  </div>
+
+  <!-- COMMISSION -->
+  <div class="page" id="page-commission">
+    <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:flex-end">
+      <div class="ff" style="margin:0;min-width:160px"><label>Rep</label>
+        <select id="comm-rep" onchange="renderCommission()" style="font-size:13px;padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface)">
+          <option value="">Select rep...</option>
+        </select>
+      </div>
+      <div class="ff" style="margin:0;min-width:120px"><label>Month</label>
+        <select id="comm-month" onchange="renderCommission()" style="font-size:13px;padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface)">
+          <option value="01">January</option><option value="02">February</option>
+          <option value="03">March</option><option value="04">April</option>
+          <option value="05">May</option><option value="06">June</option>
+          <option value="07">July</option><option value="08">August</option>
+          <option value="09">September</option><option value="10">October</option>
+          <option value="11">November</option><option value="12">December</option>
+        </select>
+      </div>
+      <div class="ff" style="margin:0;min-width:100px"><label>Year</label>
+        <select id="comm-year" onchange="renderCommission()" style="font-size:13px;padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface)">
+        </select>
+      </div>
+      <button class="btn btn-primary no-print" onclick="renderCommission()">&#128260; Refresh</button>
+      <button class="btn btn-sm btn-ghost no-print" onclick="window.print()">&#128438; Print Report</button>
+    </div>
+
+    <div id="comm-content">
+      <p style="color:var(--text3);font-size:13px;padding:20px;text-align:center">Select a rep and month to generate the commission report.</p>
+    </div>
   </div>
 
   <!-- AUDIT LOG -->
@@ -718,7 +753,7 @@ async function bootApp(user){
 function applyPerms(){
   if(!CAN.createQuote())document.getElementById('nav-newquote').classList.add('disabled');
   if(!CAN.seeAudit())document.getElementById('nav-audit').classList.add('disabled');
-  if(!CAN.adminPanel()){document.getElementById('nav-admin').classList.add('disabled');document.getElementById('nav-admin').style.display='none'}
+  if(!CAN.adminPanel()){document.getElementById('nav-admin').classList.add('disabled');document.getElementById('nav-admin').style.display='none';document.getElementById('nav-commission').classList.add('disabled');document.getElementById('nav-commission').style.display='none'}
 }
 
 async function loadAll(){
@@ -768,7 +803,7 @@ function populateUI(){
 
 function renderAll(){renderDash();updateOutBadge()}
 
-const PT={dashboard:'Dashboard',jobs:'Jobs',clients:'Clients',newquote:'New Quote',report:'Profit Report',conversions:'Conversions',audit:'Audit Log',admin:'Admin Panel'};
+const PT={dashboard:'Dashboard',jobs:'Jobs',clients:'Clients',newquote:'New Quote',report:'Profit Report',conversions:'Conversions',audit:'Audit Log',commission:'Commission Report',admin:'Admin Panel'};
 function navTo(name,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -783,6 +818,7 @@ function navTo(name,el){
   if(name==='conversions')renderConversions();
   if(name==='audit')renderAudit();
   if(name==='admin')renderAdmin();
+  if(name==='commission')initCommission();
 }
 
 function visJobs(){return role()==='rep'?jobs.filter(j=>j.branch_id===myBranch()):jobs}
@@ -1491,6 +1527,151 @@ function renderBranchCompare(){
 function renderTopClients(){
   const vj=CAN.seeAllBranches()?jobs:jobs.filter(j=>j.branch_id===myBranch());
   renderTopClients();
+}
+
+
+// ── COMMISSION REPORT (OWNER ONLY) ───────────────────────
+const COMM_TIERS=[
+  {max:300000,rate:3.5,label:'Tier 1 (up to R300k)'},
+  {max:600000,rate:4.5,label:'Tier 2 (R300k–R600k)'},
+  {max:1000000,rate:6.0,label:'Tier 3 (R600k–R1m)'},
+  {max:Infinity,rate:7.5,label:'Tier 4 (R1m+)'},
+];
+
+function getCommRate(turnover){
+  return COMM_TIERS.find(t=>turnover<=t.max)||COMM_TIERS[COMM_TIERS.length-1];
+}
+
+function initCommission(){
+  const reps=allUsers.filter(u=>['rep','manager'].includes(u.role));
+  document.getElementById('comm-rep').innerHTML='<option value="">Select rep...</option>'+
+    reps.map(u=>`<option value="${u.id}">${u.full_name}</option>`).join('');
+  const years=[...new Set(jobs.map(j=>(j.quote_date||'').slice(0,4)).filter(Boolean))].sort().reverse();
+  const curYear=String(new Date().getFullYear());
+  if(!years.includes(curYear))years.unshift(curYear);
+  document.getElementById('comm-year').innerHTML=years.map(y=>`<option value="${y}">${y}</option>`).join('');
+  document.getElementById('comm-month').value=String(new Date().getMonth()+1).padStart(2,'0');
+}
+
+function getDeds(repId,month,year){
+  try{const d=localStorage.getItem('cd_'+repId+'_'+year+'_'+month);return d?JSON.parse(d):[];}catch(e){return[];}
+}
+function saveDeds(repId,month,year,deds){
+  try{localStorage.setItem('cd_'+repId+'_'+year+'_'+month,JSON.stringify(deds));}catch(e){}
+}
+function getAssigns(repId,month,year){
+  try{const d=localStorage.getItem('ca_'+repId+'_'+year+'_'+month);return d?JSON.parse(d):[];}catch(e){return[];}
+}
+function saveAssigns(repId,month,year,arr){
+  try{localStorage.setItem('ca_'+repId+'_'+year+'_'+month,JSON.stringify(arr));}catch(e){}
+}
+
+function renderCommission(){
+  const repId=document.getElementById('comm-rep').value;
+  const month=document.getElementById('comm-month').value;
+  const year=document.getElementById('comm-year').value;
+  if(!repId){document.getElementById('comm-content').innerHTML='<p style="color:var(--text3);font-size:13px;padding:20px;text-align:center">Select a rep and month above.</p>';return;}
+  const rep=allUsers.find(u=>u.id===repId);
+  const monthName=new Date(year,parseInt(month)-1,1).toLocaleString('en-ZA',{month:'long'});
+  const monthJobs=jobs.filter(j=>(j.quote_date||'').startsWith(year)&&(j.quote_date||'').slice(5,7)===month);
+  const assigns=getAssigns(repId,month,year);
+  const repJobs=monthJobs.filter(j=>j.created_by===repId);
+  const extraJobs=monthJobs.filter(j=>assigns.includes(j.id)&&j.created_by!==repId);
+  const commJobs=[...repJobs,...extraJobs];
+  const invoiced=commJobs.filter(j=>j.status==='Invoiced');
+  const orderedOnly=commJobs.filter(j=>j.status==='Ordered');
+  const turnover=invoiced.reduce((s,j)=>s+(+j.price||0),0);
+  const tier=getCommRate(turnover);
+  const grossComm=turnover*tier.rate/100;
+  const deds=getDeds(repId,month,year);
+  const totalDeds=deds.reduce((s,d)=>s+(+d.amount||0),0);
+  const netComm=Math.max(0,grossComm-totalDeds);
+  const unassigned=monthJobs.filter(j=>j.created_by!==repId&&!assigns.includes(j.id));
+
+  document.getElementById('comm-content').innerHTML=`
+    <div class="metrics" style="margin-bottom:16px">
+      <div class="metric"><div class="metric-label">Invoiced Turnover</div><div class="metric-val mv-info">${R(turnover)}</div></div>
+      <div class="metric"><div class="metric-label">Commission Rate</div><div class="metric-val" style="font-size:15px;color:var(--teal)">${tier.rate}%</div><div style="font-size:10px;color:var(--text3)">${tier.label}</div></div>
+      <div class="metric"><div class="metric-label">Gross Commission</div><div class="metric-val mv-success">${R(grossComm)}</div></div>
+      <div class="metric" style="border-left:3px solid var(--teal)"><div class="metric-label">Net Commission Payable</div><div class="metric-val mv-success" style="font-size:20px">${R(netComm)}</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px;background:#f0fafa">
+      <div style="font-size:12px;font-weight:700;color:var(--teal);margin-bottom:8px">Tier Structure</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${COMM_TIERS.map(t=>`<div style="flex:1;min-width:110px;background:${tier===t?'var(--teal)':'var(--surface)'};color:${tier===t?'#fff':'var(--text2)'};padding:8px 12px;border-radius:6px;border:1px solid ${tier===t?'var(--teal)':'var(--border)'}"><div style="font-size:10px;opacity:0.8">${t.label}</div><div style="font-size:18px;font-weight:700">${t.rate}%</div></div>`).join('')}
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-header"><span class="card-title">&#10003; Invoiced Jobs — Qualifying for Commission</span><span style="font-size:12px;color:var(--text3)">${invoiced.length} jobs</span></div>
+      ${invoiced.length?`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Ref</th><th>Client</th><th>Branch</th><th class="num">Value</th><th>Source</th><th class="no-print"></th></tr></thead>
+      <tbody>${invoiced.map(j=>`<tr><td style="font-family:'DM Mono',monospace;color:var(--teal);font-weight:700">${j.ref}</td><td style="font-weight:600">${cName(j)}</td><td><span class="bpill" style="font-size:9px">${branchName(j.branch_id)}</span></td><td class="num">${R(j.price)}</td><td style="font-size:11px;color:var(--text3)">${j.created_by===repId?'Own':'Assigned'}</td><td class="no-print">${assigns.includes(j.id)?`<button class="btn btn-sm btn-danger" onclick="removeAssign(${j.id},'${repId}','${month}','${year}')">Remove</button>`:''}</td></tr>`).join('')}</tbody>
+      </table></div>`:'<p style="color:var(--text3);font-size:13px;padding:8px 0">No invoiced jobs this month</p>'}
+    </div>
+
+    ${orderedOnly.length?`<div class="card" style="margin-bottom:14px;border-left:3px solid var(--orange)">
+      <div class="card-header"><span class="card-title" style="color:var(--orange)">&#9888; Ordered — Not Yet Invoiced</span><span style="font-size:12px;color:var(--text3)">Not counted until invoiced</span></div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Ref</th><th>Client</th><th class="num">Value</th></tr></thead>
+      <tbody>${orderedOnly.map(j=>`<tr><td style="font-family:'DM Mono',monospace;color:var(--orange);font-weight:700">${j.ref}</td><td style="font-weight:600">${cName(j)}</td><td class="num">${R(j.price)}</td></tr>`).join('')}</tbody></table></div>
+    </div>`:''}
+
+    ${unassigned.length?`<div class="card no-print" style="margin-bottom:14px">
+      <div class="card-header"><span class="card-title">&#43; Assign Jobs to ${rep?.full_name}'s Commission</span><span style="font-size:11px;color:var(--text3)">Jobs you did — give credit to rep</span></div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Ref</th><th>Client</th><th>Status</th><th class="num">Value</th><th></th></tr></thead>
+      <tbody>${unassigned.map(j=>`<tr><td style="font-family:'DM Mono',monospace;color:var(--teal);font-weight:700">${j.ref}</td><td style="font-weight:600">${cName(j)}</td><td>${sB(j.status)}</td><td class="num">${R(j.price)}</td><td><button class="btn btn-sm btn-primary" onclick="assignJob(${j.id},'${repId}','${month}','${year}')">Assign</button></td></tr>`).join('')}</tbody>
+      </table></div>
+    </div>`:''}
+
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-header"><span class="card-title">&#8722; Deductions</span><span style="font-size:12px;color:var(--red);font-weight:600">${totalDeds>0?'-'+R(totalDeds):'None'}</span></div>
+      ${deds.length?`<div class="tbl-wrap"><table class="tbl" style="margin-bottom:14px"><thead><tr><th>Reason</th><th class="num">Amount</th><th class="no-print"></th></tr></thead>
+      <tbody>${deds.map((d,i)=>`<tr><td>${d.reason}</td><td class="num" style="color:var(--red);font-weight:600">-${R(d.amount)}</td><td class="no-print"><button class="btn btn-sm btn-danger" onclick="removeDed('${repId}','${month}','${year}',${i})">Remove</button></td></tr>`).join('')}</tbody></table></div>`:'<p style="color:var(--text3);font-size:13px;padding:8px 0;margin-bottom:12px">No deductions this month</p>'}
+      <div class="no-print" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:14px">
+        <div class="ff" style="margin:0;flex:1;min-width:200px"><label>Deduction Reason</label><input type="text" id="ded-reason" placeholder="e.g. Measurement error — Client X"></div>
+        <div class="ff" style="margin:0;width:130px"><label>Amount (R)</label><input type="number" id="ded-amount" placeholder="0.00" min="0" step="0.01"></div>
+        <button class="btn btn-danger" onclick="addDed('${repId}','${month}','${year}')">+ Add Deduction</button>
+      </div>
+    </div>
+
+    <div class="card" style="border:2px solid var(--teal)">
+      <div style="font-size:12px;font-weight:700;color:var(--teal);margin-bottom:14px;text-transform:uppercase;letter-spacing:0.06em">&#128200; Final Summary — ${rep?.full_name} — ${monthName} ${year}</div>
+      <div style="display:flex;flex-direction:column;gap:6px;max-width:420px;margin-left:auto">
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--text2)">Invoiced Turnover</span><span style="font-weight:600">${R(turnover)}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--text2)">Commission Rate — ${tier.label}</span><span style="font-weight:600">${tier.rate}%</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-top:1px solid var(--border)"><span>Gross Commission</span><span style="color:var(--green);font-weight:600">${R(grossComm)}</span></div>
+        ${deds.map(d=>`<div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--red)">${d.reason}</span><span style="color:var(--red);font-weight:600">-${R(d.amount)}</span></div>`).join('')}
+        ${totalDeds>0?`<div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--red)">Total Deductions</span><span style="color:var(--red);font-weight:600">-${R(totalDeds)}</span></div>`:''}
+        <div style="display:flex;justify-content:space-between;font-size:20px;font-weight:700;padding:10px 0;border-top:2px solid var(--teal);color:var(--teal)"><span>NET COMMISSION</span><span>${R(netComm)}</span></div>
+        <div style="font-size:11px;color:var(--text3);text-align:right">Blinds & Flooring Studio — CONFIDENTIAL</div>
+      </div>
+    </div>`;
+}
+
+function assignJob(jobId,repId,month,year){
+  const arr=getAssigns(repId,month,year);
+  if(!arr.includes(jobId)){arr.push(jobId);saveAssigns(repId,month,year,arr);}
+  renderCommission();toast('Job assigned','ok');
+}
+function removeAssign(jobId,repId,month,year){
+  saveAssigns(repId,month,year,getAssigns(repId,month,year).filter(id=>id!==jobId));
+  renderCommission();toast('Assignment removed','ok');
+}
+function addDed(repId,month,year){
+  const reason=document.getElementById('ded-reason')?.value.trim();
+  const amount=parseFloat(document.getElementById('ded-amount')?.value)||0;
+  if(!reason){toast('Enter a reason','err');return;}
+  if(amount<=0){toast('Enter a valid amount','err');return;}
+  const deds=getDeds(repId,month,year);
+  deds.push({reason,amount});
+  saveDeds(repId,month,year,deds);
+  renderCommission();toast('Deduction added','ok');
+}
+function removeDed(repId,month,year,i){
+  const deds=getDeds(repId,month,year);
+  deds.splice(i,1);
+  saveDeds(repId,month,year,deds);
+  renderCommission();toast('Deduction removed','ok');
 }
 
 // BOOT
