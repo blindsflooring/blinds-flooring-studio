@@ -511,15 +511,89 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(
 
   <!-- ADMIN -->
   <div class="page" id="page-admin">
-    <div class="dash-2">
-      <div class="card"><div class="card-header"><span class="card-title">Users</span><button class="btn btn-primary btn-sm no-print" onclick="openM('m-adduser')">+ Add User</button></div>
-        <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Change roles and branch access directly — no Supabase needed.</p>
-        <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Branch Access</th><th>Active</th><th class="no-print">Save</th></tr></thead><tbody id="admin-users"></tbody></table></div>
+
+    <!-- ROLE LEGEND -->
+    <div class="card" style="margin-bottom:16px;border-left:4px solid var(--teal)">
+      <div class="card-header"><span class="card-title">&#128274; Role Permissions Guide</span><span style="font-size:11px;color:var(--text3)">Owner eyes only</span></div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
+        <div style="background:#f0fafa;border-radius:8px;padding:12px;border-left:3px solid #262f39">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span class="badge b-owner no-dot">Owner</span><span style="font-size:11px;font-weight:600;color:var(--text2)">Full control — you</span></div>
+          <ul style="font-size:12px;color:var(--text2);line-height:1.8;padding-left:16px">
+            <li>See ALL jobs across ALL branches</li>
+            <li>Create, edit and DELETE any job</li>
+            <li>Change payments and amounts</li>
+            <li>Access Admin Panel and all reports</li>
+            <li>Add/manage users and branches</li>
+          </ul>
+        </div>
+        <div style="background:#f0fafa;border-radius:8px;padding:12px;border-left:3px solid var(--teal)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span class="badge b-manager no-dot">Manager</span><span style="font-size:11px;font-weight:600;color:var(--text2)">Branch manager / senior staff</span></div>
+          <ul style="font-size:12px;color:var(--text2);line-height:1.8;padding-left:16px">
+            <li>See ALL jobs across ALL branches</li>
+            <li>Create and edit any job</li>
+            <li>Cannot DELETE jobs</li>
+            <li>Can capture and update payments</li>
+            <li>Access reports and conversions</li>
+            <li>Cannot access Admin Panel</li>
+          </ul>
+        </div>
+        <div style="background:#f0fafa;border-radius:8px;padding:12px;border-left:3px solid var(--green)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span class="badge b-rep no-dot">Rep</span><span style="font-size:11px;font-weight:600;color:var(--text2)">Sales rep / estimator</span></div>
+          <ul style="font-size:12px;color:var(--text2);line-height:1.8;padding-left:16px">
+            <li>See only their assigned branch jobs</li>
+            <li>Create new quotes and jobs</li>
+            <li>Edit only their own jobs</li>
+            <li>Cannot DELETE jobs</li>
+            <li>Cannot change payment amounts</li>
+            <li>Can see their own conversion stats</li>
+          </ul>
+        </div>
+        <div style="background:#f0fafa;border-radius:8px;padding:12px;border-left:3px solid var(--purple)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span class="badge b-admin no-dot">Admin</span><span style="font-size:11px;font-weight:600;color:var(--text2)">Office admin / bookkeeper</span></div>
+          <ul style="font-size:12px;color:var(--text2);line-height:1.8;padding-left:16px">
+            <li>See jobs across all branches (read)</li>
+            <li>Capture and update payments</li>
+            <li>Update job status</li>
+            <li>Cannot create new quotes</li>
+            <li>Cannot DELETE jobs</li>
+            <li>Access audit log</li>
+          </ul>
+        </div>
       </div>
-      <div class="card"><div class="card-header"><span class="card-title">Branches</span><button class="btn btn-primary btn-sm no-print" onclick="openM('m-addbranch')">+ Add Branch</button></div>
-        <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Branch</th><th>Prefix</th><th>Town</th><th>Active</th></tr></thead><tbody id="admin-branches"></tbody></table></div>
+      <div style="margin-top:12px;padding:10px 14px;background:var(--orange-bg);border-radius:8px;font-size:12px;color:var(--orange);font-weight:600">
+        &#9888; Tip: Use <strong>Manager</strong> for Ryno and Madri if you want them to see and work on jobs from both branches when you are not around.
       </div>
     </div>
+
+    <!-- USERS -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">
+        <span class="card-title">&#128101; Users</span>
+        <button class="btn btn-primary btn-sm no-print" onclick="openM('m-adduser')">+ Add New User</button>
+      </div>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:14px">Change role, branch access or active status then click <strong>Save</strong>. Send a password reset email directly from here.</p>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Branch Access</th><th>Active</th><th class="no-print" style="min-width:180px">Actions</th></tr></thead>
+          <tbody id="admin-users"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- BRANCHES -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">&#127968; Branches</span>
+        <button class="btn btn-primary btn-sm no-print" onclick="openM('m-addbranch')">+ Add Branch</button>
+      </div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>Branch</th><th>Ref Prefix</th><th>Town</th><th>Active</th><th class="no-print">Actions</th></tr></thead>
+          <tbody id="admin-branches"></tbody>
+        </table>
+      </div>
+    </div>
+
   </div>
 </div>
 </div>
@@ -1058,19 +1132,20 @@ function renderReport(){
 }
 
 function renderAdmin(){
-  const branchOpts=branches.map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
-  const roleOpts=['owner','manager','rep','admin'].map(r=>`<option value="${r}">${r.charAt(0).toUpperCase()+r.slice(1)}</option>`).join('');
   document.getElementById('admin-users').innerHTML=allUsers.map(u=>`
     <tr id="urow-${u.id}">
-      <td style="font-weight:600">${u.full_name}</td>
-      <td style="font-size:12px;color:var(--text2)">${u.email}</td>
       <td>
-        <select id="urole-${u.id}" style="font-size:12px;padding:4px 8px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);font-family:'DM Sans',sans-serif;color:var(--teal);font-weight:600">
+        <div style="font-weight:600">${u.full_name}</div>
+        <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--teal)">${u.email}</div>
+      </td>
+      <td style="font-size:11px;color:var(--text3)">${u.email}</td>
+      <td>
+        <select id="urole-${u.id}" style="font-size:12px;padding:5px 8px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);font-family:'DM Sans',sans-serif;color:var(--teal);font-weight:600;width:100%">
           ${['owner','manager','rep','admin'].map(r=>`<option value="${r}" ${u.role===r?'selected':''}>${r.charAt(0).toUpperCase()+r.slice(1)}</option>`).join('')}
         </select>
       </td>
       <td>
-        <select id="ubranch-${u.id}" style="font-size:12px;padding:4px 8px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);font-family:'DM Sans',sans-serif">
+        <select id="ubranch-${u.id}" style="font-size:12px;padding:5px 8px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);font-family:'DM Sans',sans-serif;width:100%">
           <option value="">All branches</option>
           ${branches.map(b=>`<option value="${b.id}" ${u.branch_id===b.id?'selected':''}>${b.name}</option>`).join('')}
         </select>
@@ -1078,14 +1153,24 @@ function renderAdmin(){
       <td>
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px">
           <input type="checkbox" id="uactive-${u.id}" ${u.active!==false?'checked':''} style="width:16px;height:16px;accent-color:var(--teal)">
-          <span id="uactive-label-${u.id}" style="color:${u.active!==false?'var(--green)':'var(--red)'}">${u.active!==false?'Active':'Inactive'}</span>
+          <span id="uactive-label-${u.id}" style="color:${u.active!==false?'var(--green)':'var(--red)'};font-weight:600">${u.active!==false?'Active':'Inactive'}</span>
         </label>
       </td>
       <td class="no-print">
-        <button class="btn btn-sm btn-primary" onclick="saveUserChanges('${u.id}')">Save</button>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-sm btn-primary" onclick="saveUserChanges('${u.id}')" title="Save role and branch changes">&#10003; Save</button>
+          <button class="btn btn-sm btn-ghost" onclick="sendResetEmail('${u.email}','${u.full_name}')" title="Send password reset email" style="color:var(--teal);border-color:var(--teal)">&#128274; Reset PW</button>
+        </div>
+        <div id="reset-msg-${u.id}" style="display:none;font-size:11px;color:var(--green);margin-top:4px;font-weight:600"></div>
       </td>
     </tr>`).join('');
-  document.getElementById('admin-branches').innerHTML=branches.map(b=>`<tr><td style="font-weight:600">${b.name}</td><td style="color:var(--text2)">${b.town}</td><td><span class="badge no-dot" style="background:${b.active?'var(--green-bg)':'var(--red-bg)'};color:${b.active?'var(--green)':'var(--red)'}">${b.active?'Active':'Inactive'}</span></td></tr>`).join('');
+  document.getElementById('admin-branches').innerHTML=branches.map(b=>`<tr>
+    <td style="font-weight:700;color:var(--text)">${b.name}</td>
+    <td><span style="font-family:'DM Mono',monospace;font-weight:700;color:var(--teal);background:var(--teal-bg);padding:2px 8px;border-radius:4px;font-size:12px">${b.ref_prefix||'—'}</span></td>
+    <td style="color:var(--text2)">${b.town||'—'}</td>
+    <td><span class="badge no-dot" style="background:${b.active?'var(--green-bg)':'var(--red-bg)'};color:${b.active?'var(--green)':'var(--red)'}">${b.active?'Active':'Inactive'}</span></td>
+    <td class="no-print"><button class="btn btn-sm btn-ghost" onclick="toggleBranch(${b.id},${b.active})" style="color:${b.active?'var(--red)':'var(--green)'}">&#9650; ${b.active?'Deactivate':'Activate'}</button></td>
+  </tr>`).join('');
 }
 
 async function addUser(){
@@ -1120,6 +1205,28 @@ async function saveUserChanges(uid){
   // Reload users to keep in sync
   const{data}=await db.from('bf_users').select('*').order('full_name');
   allUsers=data||[];renderAdmin();
+}
+
+async function sendResetEmail(email,name){
+  const{error}=await db.auth.resetPasswordForEmail(email,{
+    redirectTo:'https://blindsflooring.github.io/blinds-flooring-studio'
+  });
+  if(error){toast('Failed to send reset: '+error.message,'err');return}
+  // Find the user id to show inline message
+  const u=allUsers.find(x=>x.email===email);
+  if(u){
+    const msgEl=document.getElementById('reset-msg-'+u.id);
+    if(msgEl){msgEl.textContent='✓ Reset email sent to '+email;msgEl.style.display='block';setTimeout(()=>msgEl.style.display='none',5000);}
+  }
+  toast('Password reset email sent to '+name,'ok');
+}
+
+async function toggleBranch(branchId,currentActive){
+  const{error}=await db.from('bf_branches').update({active:!currentActive}).eq('id',branchId);
+  if(error){toast('Failed: '+error.message,'err');return}
+  const{data}=await db.from('bf_branches').select('*').order('name');
+  branches=data||[];populateUI();renderAdmin();
+  toast('Branch '+(currentActive?'deactivated':'activated'),'ok');
 }
 
 async function addBranch(){
