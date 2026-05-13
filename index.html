@@ -1047,10 +1047,26 @@ function renderClients(filter=''){
   const names=Object.keys(cm).filter(n=>n.toLowerCase().includes(filter.toLowerCase())).sort();
   document.getElementById('clients-body').innerHTML=names.map(n=>{
     const d=cm[n];const m=d.meta||{};
-    return`<tr><td><div style="display:flex;align-items:center;gap:9px"><div class="avatar">${ini(n)}</div><span style="font-weight:600">${n}</span></div></td><td style="font-size:12px;color:var(--text2)">${m.phone||''}</td><td style="font-size:12px;color:var(--text2)">${m.email||''}</td><td style="font-size:12px;color:var(--text2);font-family:'DM Mono',monospace">${m.vat_number||''}</td><td style="font-size:12px;color:var(--text2)">${m.area||''}</td><td class="num">${d.jobs}</td><td class="num" style="font-weight:600">${R(d.billed)}</td><td class="num" style="${d.out>0?'color:var(--red);font-weight:600':'color:var(--text3)'}">${d.out>0?R(d.out):'—'}</td><td class="no-print"><button class="btn btn-sm btn-ghost" onclick="filterByClient('${n.replace(/'/g,"\\'").replace(/"/g,'&quot;')}')">Jobs</button></td></tr>`;
+    const cid=String(m.id||'');
+    const safeN=n.replace(/'/g,"\\'");
+    return`<tr style="cursor:pointer" onclick="openClientM('${cid}','${safeN}')">
+      <td><div style="display:flex;align-items:center;gap:9px"><div class="avatar">${ini(n)}</div><div><div style="font-weight:600">${n}</div>${m.company?`<div style="font-size:10px;color:var(--teal)">${m.company}</div>`:''}</div></div></td>
+      <td style="font-size:12px;color:var(--teal);font-weight:500">${m.company||''}</td>
+      <td style="font-size:12px;color:var(--text2)">${m.phone||''}</td>
+      <td style="font-size:12px;color:var(--text2)">${m.email||''}</td>
+      <td style="font-size:12px;font-family:'DM Mono',monospace;color:var(--text3)">${m.vat_number||''}</td>
+      <td class="num">${d.jobs}</td>
+      <td class="num" style="font-weight:600">${R(d.billed)}</td>
+      <td class="num" style="${d.out>0?'color:var(--red);font-weight:600':'color:var(--text3)'}">${d.out>0?R(d.out):'—'}</td>
+      <td class="no-print" onclick="event.stopPropagation()">
+        <div style="display:flex;gap:4px">
+          <button class="btn btn-sm btn-primary" onclick="openClientM('${cid}','${safeN}')">View</button>
+          <button class="btn btn-sm btn-ghost" onclick="filterByClient('${safeN}')">Jobs</button>
+        </div>
+      </td>
+    </tr>`;
   }).join('');
 }
-
 function filterByClient(n){navTo('jobs',document.getElementById('nav-jobs'));setTimeout(()=>{document.getElementById('job-search').value=n;renderJobs()},50)}
 
 async function saveClient(){
