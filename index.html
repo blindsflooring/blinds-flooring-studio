@@ -804,7 +804,6 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(
     </div>
     <div class="modal-actions">
       <button class="btn btn-danger" id="btn-del" style="margin-right:auto" onclick="delJob()">Delete</button>
-      <button class="btn" style="background:#25d366;color:#fff;border-color:#25d366" onclick="openWA(viewId)">&#128172; WhatsApp</button>
       <button class="btn btn-amber" onclick="gPDF(viewId,'Quotation')">Quote PDF</button>
       <button class="btn btn-green" onclick="gPDF(viewId,'Invoice')">Invoice PDF</button>
       <button class="btn btn-amber" onclick="emailJob(viewId,'Quotation')">&#9993; Email</button>
@@ -838,25 +837,6 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(
 </div>
 
 
-<div class="overlay hidden" id="m-whatsapp" onclick="if(event.target===this)closeM('m-whatsapp')">
-  <div class="modal">
-    <div class="modal-hdr">
-      <span class="modal-title">&#128172; Send WhatsApp</span>
-      <button class="btn btn-sm btn-ghost" onclick="closeM('m-whatsapp')">&#10005;</button>
-    </div>
-    <div class="ff"><label>Client Phone Number <span style="font-weight:400;text-transform:none;color:var(--text3)">(enter as normal — 082 123 4567)</span></label><input id="wa-phone" placeholder="082 123 4567" type="tel"></div>
-    <div class="ff"><label>Message</label><textarea id="wa-message" style="min-height:120px;font-size:13px"></textarea></div>
-    <div style="background:var(--teal-bg);border-radius:var(--radius);padding:10px 14px;font-size:12px;color:var(--teal);margin-bottom:4px">
-      &#128161; <strong>How it works:</strong> Click <strong>Copy Message</strong> first, then click <strong>Open WhatsApp</strong>. WhatsApp opens — paste the message with long-press → Paste, then send. Come back and click <strong>Log as Sent</strong>.
-    </div>
-    <div class="modal-actions">
-      <button class="btn" onclick="closeM('m-whatsapp')">Cancel</button>
-      <button class="btn btn-ghost" onclick="copyWAMsg()">&#128203; Copy Message</button>
-      <button class="btn btn-green" onclick="logWAOnly()">&#10003; Log as Sent</button>
-      <button class="btn btn-primary" style="background:#25d366;border-color:#25d366" onclick="openWhatsApp()">&#128172; Open WhatsApp</button>
-    </div>
-  </div>
-</div>
 
 <div class="overlay hidden" id="m-adduser" onclick="if(event.target===this)closeM('m-adduser')">
   <div class="modal"><div class="modal-hdr"><span class="modal-title">Register User</span><button class="btn btn-sm btn-ghost" onclick="closeM('m-adduser')">&#10005;</button></div>
@@ -1072,7 +1052,7 @@ function renderJobList(list){
       ?list.map(j=>`<div class="job-card" onclick="openJobM(${j.id})">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px"><div><div class="jc-name">${cName(j)}</div><div class="jc-ref">${j.ref}</div></div>${sB(j.status)}</div>
         <div style="display:flex;gap:5px;flex-wrap:wrap">${pB(j.paystatus)} ${mB(j.pay_method)} <span class="badge b-plain no-dot">${j.type||'Blinds'}</span> <span class="bpill" style="font-size:9px;padding:1px 6px">${branchName(j.branch_id)}</span>${(+j.discount_pct||0)>0?`<span class="badge no-dot" style="background:var(--red-bg);color:var(--red)">${j.discount_pct}% disc</span>`:''}</div>
-        <div style="display:flex;align-items:center;justify-content:space-between"><div class="jc-price">${R(j.price)}</div><div style="display:flex;align-items:center;gap:6px">${j.install_date?`<span style="font-size:11px;color:var(--text3)">${j.install_date}</span>`:''}<div class="jc-actions"><button class="btn btn-sm btn-amber" onclick="event.stopPropagation();gPDF(${j.id},'Quotation')">Q</button><button class="btn btn-sm btn-green" onclick="event.stopPropagation();gPDF(${j.id},'Invoice')">I</button><button class="btn btn-sm" style="background:#25d366;color:#fff;border-color:#25d366" onclick="event.stopPropagation();openWA(${j.id})">&#128172;</button></div></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between"><div class="jc-price">${R(j.price)}</div><div style="display:flex;align-items:center;gap:6px">${j.install_date?`<span style="font-size:11px;color:var(--text3)">${j.install_date}</span>`:''}<div class="jc-actions"><button class="btn btn-sm btn-amber" onclick="event.stopPropagation();gPDF(${j.id},'Quotation')">Q</button><button class="btn btn-sm btn-green" onclick="event.stopPropagation();gPDF(${j.id},'Invoice')">I</button></div></div></div>
         ${j.created_by_name?`<div style="font-size:10px;color:var(--text3);border-top:1px solid var(--border);padding-top:6px">By <strong>${j.created_by_name}</strong>${j.last_edited_by_name?' · Edited by <strong>'+j.last_edited_by_name+'</strong>':''}</div>`:''}
       </div>`).join('')
       :'<p style="color:var(--text3);font-size:13px;padding:20px;text-align:center">No jobs found</p>';
@@ -2267,82 +2247,10 @@ async function emailJob(jobId,docType){
 }
 
 // ── WHATSAPP ──────────────────────────────────────────────
-let currentWAJobId=null;
+let 
 
-function openWA(jobId){
-  currentWAJobId=jobId;
-  const j=jobs.find(x=>x.id===jobId);if(!j)return;
-  // Show original number as-is - conversion happens on send
-  document.getElementById('wa-phone').value=j.phone||'';
-  const repName=userProfile?.full_name||'Blinds & Flooring Studio';
-  const msg=`Hi ${j.client_name||'there'}, please find your ${j.doc_type||'Quotation'} ${j.ref} for ${R(j.price)} from Blinds & Flooring Studio. Please confirm receipt. Tel: 028 384 3898`;
-  document.getElementById('wa-message').value=msg;
-  openM('m-whatsapp');
-  // Load WA history
-  loadWAHistory(jobId);
-}
 
-function openWhatsApp(){
-  // Clean and convert to international format
-  let phone=document.getElementById('wa-phone').value.trim().replace(/[\s\-]/g,'');
-  phone=phone.replace(/[^0-9+]/g,'');
-  if(phone.startsWith('0'))phone='27'+phone.slice(1);
-  else if(phone.startsWith('+'))phone=phone.slice(1);
-  // Handle if they typed 0027
-  if(phone.startsWith('0027'))phone=phone.slice(2);
-  const msg=document.getElementById('wa-message').value.trim();
-  if(!phone){toast('Enter a phone number','err');return;}
-  if(!msg){toast('Enter a message','err');return;}
-  const url='https://wa.me/'+phone+'?text='+encodeURIComponent(msg);
-  window.open(url,'_blank');
-  // Auto-log after opening
-  setTimeout(()=>logWA(phone,msg),1500);
-}
 
-function logWAOnly(){
-  const phone=document.getElementById('wa-phone').value.trim();
-  const msg=document.getElementById('wa-message').value.trim();
-  logWA(phone,msg);
-}
-
-async function logWA(phone,msg){
-  if(!currentWAJobId)return;
-  const j=jobs.find(x=>x.id===currentWAJobId);if(!j)return;
-  const entry={
-    job_id:currentWAJobId,
-    job_ref:j.ref,
-    user_id:currentUser?.id,
-    user_name:userProfile?.full_name||currentUser?.email,
-    branch_name:branches.find(b=>b.id===myBranch())?.name||'',
-    action:'whatsapped',
-    detail:`WhatsApp sent to ${document.getElementById('wa-phone').value} — "${msg.slice(0,60)}${msg.length>60?'...':''}" by ${userProfile?.full_name||''}`,
-  };
-  await db.from('bf_audit').insert(entry).catch(e=>console.warn('WA log:',e));
-  // Update local audit log
-  auditLog.unshift({...entry,created_at:new Date().toISOString()});
-  closeM('m-whatsapp');
-  toast('WhatsApp logged ✓','ok');
-  // Refresh job modal WA history if open
-  if(viewId===currentWAJobId)loadWAHistory(currentWAJobId);
-}
-
-function loadWAHistory(jobId){
-  const box=document.getElementById('wa-history-box');
-  if(!box)return;
-  const waLogs=auditLog.filter(a=>a.job_id===jobId&&a.action==='whatsapped');
-  if(!waLogs.length){box.innerHTML='';return;}
-  box.innerHTML=`<div style="margin-top:10px;border-top:1px solid #c8eaeb;padding-top:10px">
-    <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--teal);margin-bottom:8px;letter-spacing:0.05em">&#128172; WhatsApp History</div>
-    ${waLogs.map(w=>`<div style="display:flex;gap:10px;padding:7px 10px;background:#e8fef0;border-radius:6px;margin-bottom:6px;border-left:3px solid #25d366">
-      <div style="font-size:18px;flex-shrink:0">&#128172;</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:600;color:#1a7a4a">${w.user_name}</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:2px">${w.detail}</div>
-        <div style="font-size:10px;color:var(--text3);margin-top:2px;font-family:'DM Mono',monospace">${new Date(w.created_at).toLocaleString('en-ZA')}</div>
-      </div>
-    </div>`).join('')}
-  </div>`;
-}
 
 // ── FOLLOW-UP REMINDERS (stored in localStorage) ──────────
 function setFollowUp(jobId,days){
@@ -2374,18 +2282,6 @@ function checkFollowUps(){
 })();
 
 
-function copyWAMsg(){
-  const msg=document.getElementById('wa-message').value;
-  navigator.clipboard.writeText(msg).then(()=>{
-    toast('Message copied — now open WhatsApp and paste!','ok');
-  }).catch(()=>{
-    // Fallback for older browsers
-    const ta=document.createElement('textarea');
-    ta.value=msg;document.body.appendChild(ta);ta.select();
-    document.execCommand('copy');document.body.removeChild(ta);
-    toast('Message copied!','ok');
-  });
-}
 
 // BOOT
 (async()=>{
