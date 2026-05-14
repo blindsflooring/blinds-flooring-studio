@@ -6,7 +6,6 @@
 <title>Blinds & Flooring Studio</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <style>
 :root{
   --bg:#f7f7f5;--surface:#fff;--border:#e8e8e4;--border2:#d0d0c8;
@@ -926,7 +925,7 @@ async function doForgotPassword(){
   if(msg){msg.textContent='Sending...';msg.style.display='block';msg.style.background='var(--teal-bg)';msg.style.color='var(--teal)';}
   try{
     const{error}=await db.auth.resetPasswordForEmail(email,{
-      redirectTo:'https://blindsflooring.github.io/blinds-flooring-studio'
+      redirectTo:'https://blindsflooring.github.io/blinds-flooring-studio/'
     });
     if(error)throw error;
     if(msg){
@@ -1497,7 +1496,7 @@ async function saveUserChanges(uid){
 
 async function sendResetEmail(email,name){
   const{error}=await db.auth.resetPasswordForEmail(email,{
-    redirectTo:'https://blindsflooring.github.io/blinds-flooring-studio'
+    redirectTo:'https://blindsflooring.github.io/blinds-flooring-studio/'
   });
   if(error){toast('Failed to send reset: '+error.message,'err');return}
   // Find the user id to show inline message
@@ -2252,6 +2251,7 @@ function openEmailJSSettings(){
 async function testEmailJS(){
   const s=loadEmailJSSettings();
   if(!s.pubkey){toast('Save your EmailJS settings first','err');return;}
+  loadEmailJS(async function(){
   emailjs.init(s.pubkey);
   try{
     await emailjs.send(s.service,s.template,{
@@ -2317,10 +2317,19 @@ function checkFollowUps(){
 }
 
 // Init EmailJS if settings exist
-(function initEmailJS(){
-  const pk=localStorage.getItem('ejs_pubkey');
-  if(pk)try{emailjs.init(pk);}catch(e){}
-})();
+// EmailJS loaded lazily when needed
+function loadEmailJS(callback){
+  if(window.emailjs){if(callback)callback();return;}
+  const s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
+  s.onload=function(){
+    const pk=localStorage.getItem('ejs_pubkey');
+    if(pk)try{emailjs.init(pk);}catch(e){}
+    if(callback)callback();
+  };
+  s.onerror=function(){console.warn('EmailJS failed to load');};
+  document.head.appendChild(s);
+}
 
 
 
