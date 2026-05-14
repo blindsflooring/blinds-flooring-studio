@@ -844,14 +844,15 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(
       <span class="modal-title">&#128172; Send WhatsApp</span>
       <button class="btn btn-sm btn-ghost" onclick="closeM('m-whatsapp')">&#10005;</button>
     </div>
-    <div class="ff"><label>Client Phone Number</label><input id="wa-phone" placeholder="0821234567" type="tel"></div>
+    <div class="ff"><label>Client Phone Number <span style="font-weight:400;text-transform:none;color:var(--text3)">(enter as normal — 082 123 4567)</span></label><input id="wa-phone" placeholder="082 123 4567" type="tel"></div>
     <div class="ff"><label>Message</label><textarea id="wa-message" style="min-height:120px;font-size:13px"></textarea></div>
     <div style="background:var(--teal-bg);border-radius:var(--radius);padding:10px 14px;font-size:12px;color:var(--teal);margin-bottom:4px">
-      &#128161; WhatsApp will open in a new tab. After sending, come back and click <strong>Log as Sent</strong> to record it.
+      &#128161; <strong>How it works:</strong> Click <strong>Copy Message</strong> first, then click <strong>Open WhatsApp</strong>. WhatsApp opens — paste the message with long-press → Paste, then send. Come back and click <strong>Log as Sent</strong>.
     </div>
     <div class="modal-actions">
       <button class="btn" onclick="closeM('m-whatsapp')">Cancel</button>
-      <button class="btn btn-green" onclick="logWAOnly()">&#10003; Log as Sent (already sent)</button>
+      <button class="btn btn-ghost" onclick="copyWAMsg()">&#128203; Copy Message</button>
+      <button class="btn btn-green" onclick="logWAOnly()">&#10003; Log as Sent</button>
       <button class="btn btn-primary" style="background:#25d366;border-color:#25d366" onclick="openWhatsApp()">&#128172; Open WhatsApp</button>
     </div>
   </div>
@@ -2271,27 +2272,10 @@ let currentWAJobId=null;
 function openWA(jobId){
   currentWAJobId=jobId;
   const j=jobs.find(x=>x.id===jobId);if(!j)return;
-  const phone=(j.phone||'').replace(/[^0-9+]/g,'');
-  // Format for SA numbers
-  let waPhone=phone;
-  if(phone.startsWith('0'))waPhone='27'+phone.slice(1);
-  document.getElementById('wa-phone').value=waPhone||phone;
+  // Show original number as-is - conversion happens on send
+  document.getElementById('wa-phone').value=j.phone||'';
   const repName=userProfile?.full_name||'Blinds & Flooring Studio';
-  const msg=`Hi ${j.client_name||'there'},
-
-Thank you for your enquiry. Please find below your quotation details from *Blinds & Flooring Studio*:
-
-📋 *Ref:* ${j.ref}
-💰 *Amount:* ${R(j.price)}
-📅 *Date:* ${j.quote_date||new Date().toISOString().slice(0,10)}
-
-Kindly confirm receipt and revert with any questions.
-
-Thank you for your business! 🏠
-
-_${repName}_
-_Blinds & Flooring Studio_
-_Tel: 028 384 3898_`;
+  const msg=`Hi ${j.client_name||'there'}, please find your ${j.doc_type||'Quotation'} ${j.ref} for ${R(j.price)} from Blinds & Flooring Studio. Please confirm receipt. Tel: 028 384 3898`;
   document.getElementById('wa-message').value=msg;
   openM('m-whatsapp');
   // Load WA history
@@ -2299,7 +2283,13 @@ _Tel: 028 384 3898_`;
 }
 
 function openWhatsApp(){
-  const phone=document.getElementById('wa-phone').value.trim().replace(/[^0-9+]/g,'');
+  // Clean and convert to international format
+  let phone=document.getElementById('wa-phone').value.trim().replace(/[\s\-]/g,'');
+  phone=phone.replace(/[^0-9+]/g,'');
+  if(phone.startsWith('0'))phone='27'+phone.slice(1);
+  else if(phone.startsWith('+'))phone=phone.slice(1);
+  // Handle if they typed 0027
+  if(phone.startsWith('0027'))phone=phone.slice(2);
   const msg=document.getElementById('wa-message').value.trim();
   if(!phone){toast('Enter a phone number','err');return;}
   if(!msg){toast('Enter a message','err');return;}
@@ -2325,7 +2315,7 @@ async function logWA(phone,msg){
     user_name:userProfile?.full_name||currentUser?.email,
     branch_name:branches.find(b=>b.id===myBranch())?.name||'',
     action:'whatsapped',
-    detail:`WhatsApp sent to ${phone} — "${msg.slice(0,60)}${msg.length>60?'...':''}" by ${userProfile?.full_name||''}`,
+    detail:`WhatsApp sent to ${document.getElementById('wa-phone').value} — "${msg.slice(0,60)}${msg.length>60?'...':''}" by ${userProfile?.full_name||''}`,
   };
   await db.from('bf_audit').insert(entry).catch(e=>console.warn('WA log:',e));
   // Update local audit log
@@ -2382,6 +2372,20 @@ function checkFollowUps(){
   const pk=localStorage.getItem('ejs_pubkey');
   if(pk)try{emailjs.init(pk);}catch(e){}
 })();
+
+
+function copyWAMsg(){
+  const msg=document.getElementById('wa-message').value;
+  navigator.clipboard.writeText(msg).then(()=>{
+    toast('Message copied — now open WhatsApp and paste!','ok');
+  }).catch(()=>{
+    // Fallback for older browsers
+    const ta=document.createElement('textarea');
+    ta.value=msg;document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');document.body.removeChild(ta);
+    toast('Message copied!','ok');
+  });
+}
 
 // BOOT
 (async()=>{
