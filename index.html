@@ -863,6 +863,14 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(
 </div>
 
 <script>
+
+// Clear any Supabase auth error hashes from URL immediately
+(function(){
+  if(window.location.hash&&window.location.hash.includes('error')){
+    window.history.replaceState(null,'',window.location.pathname);
+  }
+})();
+
 const {createClient}=supabase;
 const db=createClient('https://silegrlhvkwiqcshjrlp.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpbGVncmxodmt3aXFjc2hqcmxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NTEwMTgsImV4cCI6MjA5NDAyNzAxOH0.49N_KM-gKf1YDmwKU_tfiOHB9-UC13nkrf6YFcoTel8');
 
