@@ -324,7 +324,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(
     <button class="lbtn" id="l-btn" onclick="doLogin()">Sign in</button>
     <div class="lerr" id="l-err"></div>
     <div style="text-align:center;margin-top:14px">
-      <button id="forgot-btn" type="button" style="background:none;border:none;color:var(--teal);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:underline">Forgot your password?</button>
+      <button onclick="doForgotPassword()" type="button" style="background:none;border:none;color:var(--teal);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:underline">Forgot your password?</button>
     </div>
     <div id="l-reset-msg" style="display:none;background:var(--teal-bg);color:var(--teal);padding:10px 12px;border-radius:var(--radius);font-size:13px;margin-top:12px;text-align:center"></div>
   </div>
@@ -2385,43 +2385,35 @@ async function doResetPassword(){
 
 // Listen for password recovery events
 db.auth.onAuthStateChange(async(event,session)=>{
+  console.log('Auth event:',event);
   if(event==='PASSWORD_RECOVERY'){
+    // User clicked reset link - show password reset screen
     document.getElementById('login-screen').classList.add('hidden');
-    document.getElementById('reset-screen').classList.remove('hidden');
     document.getElementById('app').classList.add('hidden');
+    document.getElementById('reset-screen').classList.remove('hidden');
     window.history.replaceState(null,'',window.location.pathname);
   }
-  if(event==='SIGNED_IN'&&document.getElementById('reset-screen')&&!document.getElementById('reset-screen').classList.contains('hidden')){
-    // Stay on reset screen if we're doing a password reset
+  if(event==='SIGNED_IN'&&session){
+    // Only boot app if we're not on the reset screen
+    const rs=document.getElementById('reset-screen');
+    if(!rs||rs.classList.contains('hidden')){
+      const ls=document.getElementById('login-screen');
+      if(ls&&!ls.classList.contains('hidden')){
+        await bootApp(session.user);
+      }
+    }
   }
 });
 
 // BOOT
 (async()=>{
-  // Handle password reset token in URL hash
-  const hash=window.location.hash;
-  if(hash&&(hash.includes('type=recovery')||hash.includes('type=invite'))){
-    // Exchange the token for a session
-    const{data,error}=await db.auth.exchangeCodeForSession(window.location.href);
-    if(!error&&data?.session){
-      // Show reset password screen
-      document.getElementById('login-screen').classList.add('hidden');
-      document.getElementById('reset-screen').classList.remove('hidden');
-      // Clear the hash from URL
-      window.history.replaceState(null,'',window.location.pathname);
-      return;
-    }
+  // Clear any error hashes from URL
+  if(window.location.hash&&window.location.hash.includes('error')){
+    window.history.replaceState(null,'',window.location.pathname);
   }
-  // Also check if we have a session with recovery type
+  // Check for existing session (not recovery - onAuthStateChange handles that)
   const{data:{session}}=await db.auth.getSession();
   if(session?.user){
-    // Check if this is a recovery session
-    if(session.user.aud==='authenticated'&&hash.includes('access_token')){
-      document.getElementById('login-screen').classList.add('hidden');
-      document.getElementById('reset-screen').classList.remove('hidden');
-      window.history.replaceState(null,'',window.location.pathname);
-      return;
-    }
     await bootApp(session.user);
   }
 })();
