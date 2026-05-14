@@ -324,7 +324,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(
     <button class="lbtn" id="l-btn" onclick="doLogin()">Sign in</button>
     <div class="lerr" id="l-err"></div>
     <div style="text-align:center;margin-top:14px">
-      <button onclick="doForgotPassword()" type="button" style="background:none;border:none;color:var(--teal);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:underline">Forgot your password?</button>
+      <button id="forgot-btn" type="button" style="background:none;border:none;color:var(--teal);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:underline">Forgot your password?</button>
     </div>
     <div id="l-reset-msg" style="display:none;background:var(--teal-bg);color:var(--teal);padding:10px 12px;border-radius:var(--radius);font-size:13px;margin-top:12px;text-align:center"></div>
   </div>
@@ -926,7 +926,7 @@ async function doForgotPassword(){
   if(msg){msg.textContent='Sending...';msg.style.display='block';msg.style.background='var(--teal-bg)';msg.style.color='var(--teal)';}
   try{
     const{error}=await db.auth.resetPasswordForEmail(email,{
-      redirectTo:'https://blindsflooring.github.io/blinds-flooring-studio/'
+      redirectTo:'https://blindsflooring.github.io/blinds-flooring-studio'
     });
     if(error)throw error;
     if(msg){
@@ -1497,7 +1497,7 @@ async function saveUserChanges(uid){
 
 async function sendResetEmail(email,name){
   const{error}=await db.auth.resetPasswordForEmail(email,{
-    redirectTo:'https://blindsflooring.github.io/blinds-flooring-studio/'
+    redirectTo:'https://blindsflooring.github.io/blinds-flooring-studio'
   });
   if(error){toast('Failed to send reset: '+error.message,'err');return}
   // Find the user id to show inline message
@@ -2323,6 +2323,13 @@ function checkFollowUps(){
 })();
 
 
+
+
+// Attach login page button events after DOM loads
+document.addEventListener('DOMContentLoaded',function(){
+  const forgotBtn=document.getElementById('forgot-btn');
+  if(forgotBtn)forgotBtn.addEventListener('click',doForgotPassword);
+});
 
 // BOOT
 (async()=>{
