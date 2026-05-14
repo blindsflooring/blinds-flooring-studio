@@ -813,27 +813,6 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(
 </div>
 
 
-<div class="overlay hidden" id="m-emailjs" onclick="if(event.target===this)closeM('m-emailjs')">
-  <div class="modal">
-    <div class="modal-hdr"><span class="modal-title">&#9993; Email Settings (EmailJS)</span><button class="btn btn-sm btn-ghost" onclick="closeM('m-emailjs')">&#10005;</button></div>
-    <div style="background:var(--teal-bg);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px;font-size:12px;color:var(--teal)">
-      <strong>Setup:</strong> Create a free account at <a href="https://emailjs.com" target="_blank" style="color:var(--teal)">emailjs.com</a>, connect your Gmail or Outlook, then paste your keys below. Free tier = 200 emails/month.
-    </div>
-    <div class="fg fg2">
-      <div class="ff" style="grid-column:1/-1"><label>Service ID <span style="font-weight:400;text-transform:none;color:var(--text3)">(from EmailJS → Email Services)</span></label><input id="ejs-service" placeholder="service_xxxxxxx"></div>
-      <div class="ff" style="grid-column:1/-1"><label>Template ID <span style="font-weight:400;text-transform:none;color:var(--text3)">(from EmailJS → Email Templates)</span></label><input id="ejs-template" placeholder="template_xxxxxxx"></div>
-      <div class="ff" style="grid-column:1/-1"><label>Public Key <span style="font-weight:400;text-transform:none;color:var(--text3)">(from EmailJS → Account → General)</span></label><input id="ejs-pubkey" placeholder="xxxxxxxxxxxxxxxxxxxx"></div>
-    </div>
-    <div style="background:var(--orange-bg);border-radius:var(--radius);padding:10px 14px;font-size:12px;color:var(--orange);margin-top:4px">
-      <strong>EmailJS Template variables to use:</strong> {{to_email}}, {{to_name}}, {{subject}}, {{message}}, {{ref}}, {{amount}}, {{from_name}}
-    </div>
-    <div class="modal-actions">
-      <button class="btn" onclick="closeM('m-emailjs')">Cancel</button>
-      <button class="btn btn-ghost" onclick="testEmailJS()">Test Email</button>
-      <button class="btn btn-primary" onclick="saveEmailJSSettings()">Save Settings</button>
-    </div>
-  </div>
-</div>
 
 
 
@@ -2231,71 +2210,21 @@ function exportEmails(){
 }
 
 
-// ── EMAILJS ───────────────────────────────────────────────
-function loadEmailJSSettings(){
-  const s={service:localStorage.getItem('ejs_service')||'',template:localStorage.getItem('ejs_template')||'',pubkey:localStorage.getItem('ejs_pubkey')||''};
-  return s;
-}
-function saveEmailJSSettings(){
-  const s=loadEmailJSSettings();
-  const service=document.getElementById('ejs-service').value.trim();
-  const template=document.getElementById('ejs-template').value.trim();
-  const pubkey=document.getElementById('ejs-pubkey').value.trim();
-  if(!service||!template||!pubkey){toast('Fill in all EmailJS fields','err');return;}
-  localStorage.setItem('ejs_service',service);
-  localStorage.setItem('ejs_template',template);
-  localStorage.setItem('ejs_pubkey',pubkey);
-  emailjs.init(pubkey);
-  closeM('m-emailjs');
-  toast('Email settings saved!','ok');
-}
-function openEmailJSSettings(){
-  const s=loadEmailJSSettings();
-  document.getElementById('ejs-service').value=s.service;
-  document.getElementById('ejs-template').value=s.template;
-  document.getElementById('ejs-pubkey').value=s.pubkey;
-  openM('m-emailjs');
-}
-async function testEmailJS(){
-  const s=loadEmailJSSettings();
-  if(!s.pubkey){toast('Save your EmailJS settings first','err');return;}
-  loadEmailJS(async function(){
-    emailjs.init(s.pubkey);
-    try{
-      const res=await emailjs.send(s.service,s.template,{
-        to_email:userProfile?.email||currentUser?.email,
-        to_name:userProfile?.full_name||'Test',
-        subject:'Test Email from BFS App',
-        message:'Your EmailJS is configured correctly!',
-        ref:'TEST001',amount:'R0.00',from_name:'Blinds & Flooring Studio'
-      });
-      toast('Test email sent!','ok');
-    }catch(e){toast('Email failed: '+(e.text||e.message||'error'),'err');}
-  });
-}
+
+// ── EMAIL (simple mailto) ────────────────────────────────
 async function emailJob(jobId,docType){
-  const j=jobs.find(x=>x.id===jobId);if(!j){toast('Job not found','err');return;}
-  const s=loadEmailJSSettings();
-  if(!s.pubkey){
-    toast('Set up EmailJS first — go to Admin Panel → Email Settings','warn');
-    openEmailJSSettings();
-    return;
-  }
+  const j=jobs.find(x=>x.id===jobId);
+  if(!j){toast('Job not found','err');return;}
   if(!j.email){toast('No email address for this client','warn');return;}
-  emailjs.init(s.pubkey);
-  const sub=`${docType} ${j.ref} — Blinds & Flooring Studio`;
-  const msg=`Dear ${j.client_name||'Client'},\n\nPlease find your ${docType.toLowerCase()} ${j.ref} from Blinds & Flooring Studio.\n\nAmount: ${R(j.price)}\n\nTo view your document, please ask us to send it via WhatsApp or email reply.\n\nShould you have any questions please do not hesitate to contact us.\n\nKind regards,\nBlinds & Flooring Studio\nTel: 028 384 3898`;
-  try{
-    await emailjs.send(s.service,s.template,{
-      to_email:j.email,to_name:j.client_name||'Client',
-      subject:sub,message:msg,ref:j.ref,
-      amount:R(j.price),from_name:userProfile?.full_name||'Blinds & Flooring Studio'
-    });
-    await logAudit(jobId,j.ref,'emailed',`${docType} emailed to ${j.email} by ${userProfile?.full_name||''}`)
-    toast('Email sent to '+j.email,'ok');
-  }catch(e){toast('Email failed: '+(e.text||e.message||'unknown error'),'err');}
-  });
+  const sub=encodeURIComponent(docType+' '+j.ref+' — Blinds & Flooring Studio');
+  const body=encodeURIComponent('Dear '+j.client_name+',\n\nPlease find your '+docType.toLowerCase()+' '+j.ref+' for '+R(j.price)+' attached.\n\nKind regards,\nBlinds & Flooring Studio\nTel: 028 384 3898');
+  window.open('mailto:'+j.email+'?subject='+sub+'&body='+body);
+  await logAudit(jobId,j.ref,'emailed',docType+' email opened for '+j.email);
+  toast('Email client opened','ok');
 }
+function openEmailJSSettings(){toast('Email settings coming soon','ok');}
+function loadEmailJS(cb){if(cb)cb();}
+
 
 // ── WHATSAPP ──────────────────────────────────────────────
 let 
