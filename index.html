@@ -1715,7 +1715,13 @@ function prevPDF(){
 
 
 // ── BRANCH REF NUMBERING ──────────────────────────────────
-function branchPrefix(id){return branches.find(b=>b.id===id)?.ref_prefix||'JOB'}
+function branchPrefix(id){
+  const b=branches.find(x=>x.id===id||String(x.id)===String(id));
+  if(!b)return 'JOB';
+  if(b.ref_prefix)return b.ref_prefix;
+  // Auto-generate from branch name if no prefix set
+  return (b.name||'JOB').replace(/[^A-Z]/gi,'').toUpperCase().slice(0,3)||'JOB';
+}
 
 function getNextRef(branchId){
   const prefix=branchPrefix(branchId);
@@ -2069,7 +2075,7 @@ function openClientM(clientId, clientNameFallback){
         ${c.vat_number?`<div style="font-size:12px;color:var(--text3);margin-top:4px">VAT: <strong>${c.vat_number}</strong></div>`:''}
         ${c.address?`<div style="font-size:12px;color:var(--text2);margin-top:8px;padding-top:8px;border-top:1px solid #c8eaeb">&#127968; ${c.address}</div>`:''}
         ${c.area?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${c.area}</div>`:''}
-        ${!c.id?`<div style="margin-top:10px;padding:8px;background:var(--orange-bg);border-radius:6px;font-size:11px;color:var(--orange)">&#9888; Not saved as a client record yet.<br><button class="btn btn-sm btn-amber" style="margin-top:6px" onclick="prefillAndAddClient()">Add to Clients</button></div>`:''}
+        ${!c.id?`<div style="margin-top:10px;padding:8px;background:var(--orange-bg);border-radius:6px;font-size:11px;color:var(--orange)">&#9888; Not saved as a client record yet — details will be pulled from their jobs automatically.<br><button class="btn btn-sm btn-primary" style="margin-top:6px;width:100%" onclick="prefillAndAddClient()">&#43; Save to Client Database</button></div>`:''}
       </div>
       <div style="display:flex;flex-direction:column;gap:8px">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
@@ -2179,32 +2185,53 @@ async function deleteClient(){
 }
 
 
-function prefillAndAddClient(){
-  // Try to get info from jobs for this client
+async function prefillAndAddClient(){
   const clientName = document.getElementById('mcv-title')?.textContent?.split(' — ')[0]||'';
+  if(!clientName){toast('No client name found','err');return;}
+  // Check not already saved
+  const exists = clients.find(c=>c.name.toLowerCase()===clientName.toLowerCase());
+  if(exists){toast('Client already in database','warn');closeM('m-client-view');return;}
+  // Get info from jobs
   const cJobs = jobs.filter(j=>cName(j)===clientName);
   const j = cJobs[0]||{};
-  // Split name
-  const parts = clientName.trim().split(' ');
-  document.getElementById('c-fn').value = parts[0]||'';
-  document.getElementById('c-ln').value = parts.slice(1).join(' ')||'';
-  document.getElementById('c-ph').value = j.phone||'';
-  document.getElementById('c-em').value = j.email||'';
-  document.getElementById('c-co').value = j.company||'';
-  document.getElementById('c-ad').value = j.address||'';
-  ['c-vat','c-ar'].forEach(id=>document.getElementById(id).value='');
+  // Save directly
+  const{data,error}=await db.from('bf_clients').insert({
+    name:clientName,
+    company:j.company||'',
+    phone:j.phone||'',
+    email:j.email||'',
+    address:j.address||'',
+    vat_number:j.client_vat||'',
+    area:''
+  }).select();
+  if(error){toast('Failed to save: '+error.message,'err');return;}
+  clients.push(data[0]);
+  toast(clientName+' saved to clients!','ok');
   closeM('m-client-view');
-  openM('m-client');
+  renderClients();
 }
 
 
 async function autoSaveClient(clientName, jobData){
   if(!clientName)return;
-  // Check if already in bf_clients
   const exists=clients.find(c=>c.name.toLowerCase()===clientName.toLowerCase());
-  if(exists)return;
-  // Save new client record automatically
-  const newClient={
+  if(exists){
+    // Update existing client with any new info
+    const c=exists;
+    const updates={};
+    if(!c.phone&&jobData.phone)updates.phone=jobData.phone;
+    if(!c.email&&jobData.email)updates.email=jobData.email;
+    if(!c.company&&jobData.company)updates.company=jobData.company;
+    if(!c.address&&jobData.address)updates.address=jobData.address;
+    if(!c.vat_number&&jobData.client_vat)updates.vat_number=jobData.client_vat;
+    if(Object.keys(updates).length>0){
+      await db.from('bf_clients').update(updates).eq('id',c.id);
+      Object.assign(c,updates);
+    }
+    return;
+  }
+  // Save new client
+  const{data,error}=await db.from('bf_clients').insert({
     name:clientName,
     company:jobData.company||'',
     phone:jobData.phone||'',
@@ -2212,8 +2239,7 @@ async function autoSaveClient(clientName, jobData){
     address:jobData.address||'',
     vat_number:jobData.client_vat||'',
     area:'',
-  };
-  const{data,error}=await db.from('bf_clients').insert(newClient).select();
+  }).select();
   if(!error&&data?.[0]){
     clients.push(data[0]);
     console.log('Auto-saved client:',clientName);
