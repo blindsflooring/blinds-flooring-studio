@@ -971,14 +971,26 @@ async function loadAll(){
       db.from('bf_users').select('*').order('full_name'),
       db.from('bf_audit').select('*').order('created_at',{ascending:false}).limit(200)
     ]);
-    if(jr.error)throw jr.error;
+    // Check each table for errors
+    if(jr.error){console.error('Jobs error:',jr.error);throw jr.error;}
+    if(ur.error){console.error('Users error:',ur.error);}
+    if(br.error){console.error('Branches error:',br.error);}
+    if(cr.error){console.error('Clients error:',cr.error);}
     jobs=(jr.data||[]).map(j=>({...j,lines:typeof j.lines==='string'?JSON.parse(j.lines||'[]'):(j.lines||[])}));
-    clients=cr.data||[];branches=br.data||[];allUsers=ur.data||[];auditLog=ar.data||[];
+    clients=cr.data||[];
+    branches=br.data||[];
+    allUsers=ur.data||[];
+    auditLog=ar.data||[];
     lbar(80);
+    console.log('Loaded:',jobs.length,'jobs,',clients.length,'clients,',branches.length,'branches,',allUsers.length,'users');
     if(!jobs.length){toast('Ready — create your first quote!','ok');}
     populateUI();renderAll();lbar(100);
-    toast(`${jobs.length} jobs loaded`,'ok');
-  }catch(e){lbar(100);toast('Error: '+e.message,'err');console.error(e)}
+    if(jobs.length)toast(jobs.length+' jobs loaded','ok');
+  }catch(e){
+    lbar(100);
+    console.error('loadAll error:',e);
+    toast('Load error: '+e.message,'err');
+  }
 }
 
 function populateUI(){
@@ -1406,6 +1418,9 @@ function renderReport(){
 }
 
 function renderAdmin(){
+  if(!allUsers.length){
+    document.getElementById('admin-users').innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text3)">No users loaded — check console for errors</td></tr>';
+  } else {
   document.getElementById('admin-users').innerHTML=allUsers.map(u=>`
     <tr id="urow-${u.id}">
       <td>
@@ -1438,6 +1453,7 @@ function renderAdmin(){
         <div id="reset-msg-${u.id}" style="display:none;font-size:11px;color:var(--green);margin-top:4px;font-weight:600"></div>
       </td>
     </tr>`).join('');
+  }
   document.getElementById('admin-branches').innerHTML=branches.map(b=>`<tr>
     <td style="font-weight:700;color:var(--text)">${b.name}</td>
     <td><span style="font-family:'DM Mono',monospace;font-weight:700;color:var(--teal);background:var(--teal-bg);padding:2px 8px;border-radius:4px;font-size:12px">${b.ref_prefix||'—'}</span></td>
