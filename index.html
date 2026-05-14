@@ -899,7 +899,48 @@ function lbar(p){const b=document.getElementById('lbar');b.style.width=p+'%';if(
 function openM(id){document.getElementById(id).classList.remove('hidden')}
 function closeM(id){document.getElementById(id).classList.add('hidden')}
 
-async function doLogin(){
+async 
+function togglePass(){
+  const inp=document.getElementById('l-pass');
+  const icon=document.getElementById('eye-icon');
+  if(!inp)return;
+  if(inp.type==='password'){
+    inp.type='text';
+    if(icon)icon.innerHTML='<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+  } else {
+    inp.type='password';
+    if(icon)icon.innerHTML='<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  }
+}
+
+async function doForgotPassword(){
+  const emailEl=document.getElementById('l-email');
+  const err=document.getElementById('l-err');
+  const msg=document.getElementById('l-reset-msg');
+  const email=(emailEl?.value||'').trim();
+  if(!email){
+    if(err){err.textContent='Please enter your email address first';err.style.display='block';}
+    return;
+  }
+  if(err)err.style.display='none';
+  if(msg){msg.textContent='Sending...';msg.style.display='block';msg.style.background='var(--teal-bg)';msg.style.color='var(--teal)';}
+  try{
+    const{error}=await db.auth.resetPasswordForEmail(email,{
+      redirectTo:'https://blindsflooring.github.io/blinds-flooring-studio/'
+    });
+    if(error)throw error;
+    if(msg){
+      msg.textContent='✓ Password reset email sent to '+email+'. Check your inbox and spam folder!';
+      msg.style.background='var(--green-bg)';
+      msg.style.color='var(--green)';
+    }
+  }catch(e){
+    if(msg)msg.style.display='none';
+    if(err){err.textContent='Could not send reset: '+(e.message||'Unknown error');err.style.display='block';}
+  }
+}
+
+function doLogin(){
   const email=document.getElementById('l-email').value.trim();
   const pass=document.getElementById('l-pass').value;
   const btn=document.getElementById('l-btn');
