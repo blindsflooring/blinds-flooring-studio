@@ -2260,17 +2260,18 @@ async function testEmailJS(){
   const s=loadEmailJSSettings();
   if(!s.pubkey){toast('Save your EmailJS settings first','err');return;}
   loadEmailJS(async function(){
-  emailjs.init(s.pubkey);
-  try{
-    await emailjs.send(s.service,s.template,{
-      to_email:userProfile?.email||currentUser?.email,
-      to_name:userProfile?.full_name||'Test',
-      subject:'Test Email from BFS App',
-      message:'Your EmailJS is configured correctly!',
-      ref:'TEST001',amount:'R0.00',from_name:'Blinds & Flooring Studio'
-    });
-    toast('Test email sent to '+currentUser?.email,'ok');
-  }catch(e){toast('Email failed: '+e.text||e.message,'err');}
+    emailjs.init(s.pubkey);
+    try{
+      const res=await emailjs.send(s.service,s.template,{
+        to_email:userProfile?.email||currentUser?.email,
+        to_name:userProfile?.full_name||'Test',
+        subject:'Test Email from BFS App',
+        message:'Your EmailJS is configured correctly!',
+        ref:'TEST001',amount:'R0.00',from_name:'Blinds & Flooring Studio'
+      });
+      toast('Test email sent!','ok');
+    }catch(e){toast('Email failed: '+(e.text||e.message||'error'),'err');}
+  });
 }
 async function emailJob(jobId,docType){
   const j=jobs.find(x=>x.id===jobId);if(!j){toast('Job not found','err');return;}
@@ -2293,6 +2294,7 @@ async function emailJob(jobId,docType){
     await logAudit(jobId,j.ref,'emailed',`${docType} emailed to ${j.email} by ${userProfile?.full_name||''}`)
     toast('Email sent to '+j.email,'ok');
   }catch(e){toast('Email failed: '+(e.text||e.message||'unknown error'),'err');}
+  });
 }
 
 // ── WHATSAPP ──────────────────────────────────────────────
