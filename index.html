@@ -1132,7 +1132,10 @@ function renderJobList(list){
 function openJobM(id){
   viewId=id;const j=jobs.find(x=>x.id===id);if(!j)return;
   const lines=getLines(j);
-  const linesSub=lines.reduce((s,l)=>s+(+l.qty||1)*(+l.price||0),0);
+  // For flooring jobs, price is the total (not qty*price)
+  const linesSub=fl
+    ?lines.reduce((s,l)=>s+(+l.price||0),0)
+    :lines.reduce((s,l)=>s+(+l.qty||1)*(+l.price||0),0);
   const discPct=+j.discount_pct||0;
   const discAmt=linesSub*discPct/100;
   const afterDisc=linesSub-discAmt;
@@ -1329,6 +1332,8 @@ function calcT(){
 }
 
 async function saveQ(){
+  const btn=document.getElementById('btn-save');
+  try{
   if(!CAN.createQuote()){toast('No permission','err');return}
   const client=document.getElementById('q-client').value.trim();
   if(!client){toast('Enter a client name','err');return}
@@ -1361,7 +1366,7 @@ async function saveQ(){
     branch_id:branchId,
     discount_pct:discPct
   };
-  const btn=document.getElementById('btn-save');btn.disabled=true;btn.textContent='Saving...';
+  btn.disabled=true;btn.textContent='Saving...';
   let error,data;
   if(editId){
     jd.last_edited_by=currentUser?.id;jd.last_edited_by_name=userProfile?.full_name||currentUser?.email;jd.last_edited_at=new Date().toISOString();
@@ -1373,8 +1378,16 @@ async function saveQ(){
     if(!error&&data?.[0])await logAudit(data[0].id,data[0].ref,'created',`Quote for ${client} — ${R(tot)}${discPct>0?' ('+discPct+'% discount)':''}`);
   }
   btn.disabled=false;btn.textContent='Save to Database';
-  if(error){toast('Save failed: '+error.message,'err');return}
-  toast(editId?'Job updated':'Quote saved','ok');await loadAll();navTo('jobs',document.getElementById('nav-jobs'));
+  if(error){toast('Save failed: '+error.message,'err');return;}
+  toast(editId?'Job updated!':'Quote saved — '+jd.ref,'ok');
+  await loadAll();
+  navTo('jobs',document.getElementById('nav-jobs'));
+  }catch(e){
+    console.error('Save error:',e);
+    toast('Save error: '+e.message,'err');
+    btn.disabled=false;
+    btn.textContent='Save to Database';
+  }
 }
 
 async function logAudit(jobId,jobRef,action,detail){
@@ -1664,22 +1677,25 @@ function buildPDF(j,docType){
 <div class="foot">We thank you sincerely for your custom!</div>
 <script>
 function emailDoc(){
-  var title=document.title;
-  var clientEl=document.querySelector('.info td div[style*="font-weight:700"]');
-  var emailEl=document.querySelector('.info td div a[href^="mailto"]');
-  var clientEmail=emailEl?emailEl.getAttribute('href').replace('mailto:',''):'';
+  // Get client email from the page
+  var emailLinks=document.querySelectorAll('a[href^="mailto:"]');
+  var clientEmail='';
+  for(var i=0;i<emailLinks.length;i++){
+    var e=emailLinks[i].href.replace('mailto:','').split('?')[0];
+    if(e&&!e.includes('blindsflooring')){clientEmail=e;break;}
+  }
+  var title=document.title.replace(/Blinds.*?Studio\s*/i,'').trim()||document.title;
   var subject=encodeURIComponent(title);
-  var body=encodeURIComponent('Dear Client,\n\nPlease find attached your '+title+'.\n\nPlease do not hesitate to contact us should you have any questions.\n\nKind regards,\nBlinds & Flooring Studio\nTel: 028 384 3898\nsales@blindsflooring.co.za');
-  window.location='mailto:'+clientEmail+'?subject='+subject+'&body='+body;
+  var body=encodeURIComponent('Dear Client,\r\n\r\nPlease find your '+title+' from Blinds & Flooring Studio attached.\r\n\r\nKindly confirm receipt and revert with any questions.\r\n\r\nKind regards,\r\nBlinds & Flooring Studio\r\nTel: 028 384 3898\r\nsales@blindsflooring.co.za');
+  // Try to open email client
+  var mailtoLink='mailto:'+clientEmail+'?subject='+subject+'&body='+body;
+  window.location.href=mailtoLink;
 }
 <\/script>
 <script>
 function downloadPDF(){
-  var blob=new Blob([document.documentElement.outerHTML],{type:'text/html'});
-  var a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=document.title.replace(/[^a-z0-9]/gi,'_')+'.html';
-  a.click();
+  // Open print dialog - user saves as PDF from there
+  window.print();
 }
 window.onload=function(){
   // Don't auto-print - let user choose
@@ -1687,7 +1703,7 @@ window.onload=function(){
 <\/script>
 <div style="position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:9999;background:#fff;padding:8px;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.15)">
   <button onclick="window.print()" style="padding:8px 16px;background:#00aab2;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:Arial,sans-serif">&#128438; Print</button>
-  <button onclick="downloadPDF()" style="padding:8px 16px;background:#262f39;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:Arial,sans-serif">&#11015; Download</button>
+  <button onclick="window.print()" style="padding:8px 16px;background:#262f39;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:Arial,sans-serif">&#128438; Save as PDF</button>
   <button onclick="emailDoc()" style="padding:8px 16px;background:#ef663c;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:Arial,sans-serif">&#9993; Email</button>
   <button onclick="window.close()" style="padding:8px 16px;background:#f0f0f0;color:#333;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:Arial,sans-serif">&#10005; Close</button>
 </div>
@@ -2385,33 +2401,61 @@ async function doResetPassword(){
 
 // Listen for password recovery events
 db.auth.onAuthStateChange(async(event,session)=>{
-  console.log('Auth event:',event);
+  console.log('Auth state:',event);
   if(event==='PASSWORD_RECOVERY'){
-    // User clicked reset link - show password reset screen
+    // Show reset screen immediately
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('app').classList.add('hidden');
     document.getElementById('reset-screen').classList.remove('hidden');
     window.history.replaceState(null,'',window.location.pathname);
+    return;
   }
   if(event==='SIGNED_IN'&&session){
-    // Only boot app if we're not on the reset screen
-    const rs=document.getElementById('reset-screen');
-    if(!rs||rs.classList.contains('hidden')){
-      const ls=document.getElementById('login-screen');
-      if(ls&&!ls.classList.contains('hidden')){
-        await bootApp(session.user);
-      }
+    const onResetScreen=!document.getElementById('reset-screen').classList.contains('hidden');
+    const onLoginScreen=!document.getElementById('login-screen').classList.contains('hidden');
+    if(!onResetScreen&&onLoginScreen){
+      await bootApp(session.user);
     }
+  }
+  if(event==='SIGNED_OUT'){
+    location.reload();
   }
 });
 
 // BOOT
 (async()=>{
-  // Clear any error hashes from URL
-  if(window.location.hash&&window.location.hash.includes('error')){
-    window.history.replaceState(null,'',window.location.pathname);
+  const url=new URL(window.location.href);
+  const hash=window.location.hash||'';
+
+  // Clear error hashes
+  if(hash.includes('error=access_denied')||hash.includes('otp_expired')){
+    window.history.replaceState(null,'',url.pathname);
   }
-  // Check for existing session (not recovery - onAuthStateChange handles that)
+
+  // PKCE flow - ?code= in URL (most common with Supabase v2)
+  if(url.searchParams.get('code')){
+    try{
+      const{data,error}=await db.auth.exchangeCodeForSession(window.location.href);
+      console.log('Code exchange result:',data?.session?.user?.email,error?.message);
+      if(!error&&data?.session){
+        window.history.replaceState(null,'',url.pathname);
+        // onAuthStateChange will handle showing reset screen
+        return;
+      }
+    }catch(e){console.log('Code exchange error:',e);}
+  }
+
+  // Legacy hash flow - #access_token= in URL
+  if(hash.includes('access_token')){
+    const{data:{session}}=await db.auth.getSession();
+    if(session){
+      window.history.replaceState(null,'',url.pathname);
+      // onAuthStateChange handles the rest
+      return;
+    }
+  }
+
+  // Normal boot - check existing session
   const{data:{session}}=await db.auth.getSession();
   if(session?.user){
     await bootApp(session.user);
